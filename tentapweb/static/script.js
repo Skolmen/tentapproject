@@ -83,6 +83,14 @@ function updateDateDropdown(bookings) {
     const option = document.createElement('option');
     option.value = booking.date;
     option.textContent = booking.date;
+  
+    const currentDate = new Date(); // Get the current date
+    const formattedDate = currentDate.toLocaleDateString('sv-SE', { timeZone: 'Europe/Stockholm'});
+  
+    if (booking.date === formattedDate) {
+      option.selected = true; // Auto-select the option if it matches the current date
+    }
+  
     dateDropdown.appendChild(option);
   });
 }

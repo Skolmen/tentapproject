@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 CORS(app, resources={r"/*": {"origins": cors_whitelist}})
 
-DATABASE = config.DATABASE
+DATABASE = config.DATABASE_LOCATION
 connection_pool: Connection = None
 
 # Help functions --------------------------------------
