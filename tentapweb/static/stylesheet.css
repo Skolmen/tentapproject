@@ -1,0 +1,108 @@
+body {
+    font-family: Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
+.main-wrapper {
+    display: flex;
+    flex-direction: column;
+}
+
+.main-top {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.main-mid-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.main-mid-infobox {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+}
+
+.main-mid-infobox > * {
+    text-align: center;
+}
+
+.main-mid-infobox > p {
+    margin: 0;
+}
+
+.main-mid-infobox > ul {
+    padding: 0;
+}
+
+.main-mid-infobox > ol > * {
+    text-align: left;
+}
+
+#id-main-mid-list-table {
+   font-size: 15px;
+   border: 1px solid black;
+   border-collapse: collapse;
+   margin-bottom: 10px;
+}
+
+th, td {
+    text-align: left;
+    border: 1px solid black;
+    border-collapse: collapse;
+    padding: 4px;
+}
+
+.main-mid-list-table-tr-completed {
+    background-color: red;
+}
+
+.main-mid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: left;
+}
+
+.main-mid-changebox {
+    display: flex;
+    flex-direction: row;
+    padding: 5px 0 5px 0;
+}
+
+.main-mid-changebox > *{
+    margin: 0 2px 0 2px;
+}
+
+.main-mid-changebox > input{
+    width: 80px;
+}
+
+.who-books-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.who-books-box > * {
+    text-align: center;
+}
+
+.who-books-box > p {
+    margin-bottom: 0;
+}
+
+.sal-box-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.sal-box-wrapper > h3 {
+    text-align: center;
+}
