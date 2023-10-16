@@ -32,6 +32,20 @@ def validate_value(value):
     pattern = r'^([A-Za-z]{1,2}\d{1,3}|[-]?)$'
     return re.match(pattern, value) is not None
 
+# Function to fetch the discord name from the database
+def fetch_discord_name(name):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT dcname FROM name_to_dcname WHERE name = ?", (name,))
+    result = cursor.fetchone()
+
+    if result:
+        dcuid = result[0]
+        return dcuid
+    else:
+        return None
+
 # Routes ----------------------------------------------
 
 # Custom error handler for 404 Not Found
@@ -80,6 +94,35 @@ def update_booking():
     except Exception as e:
         print('Error updating value:', str(e))
         return jsonify({'success': False, 'error_type': 0, 'error': 'Ett fel upptod!'}), 500
+
+#Edits booking
+@app.route('/edit_booking', methods=['POST'])
+def edit_booking():
+    try:
+        data = request.get_json()
+        _id = data['id']
+        date = data['date']
+        person_1 = data['person_1']
+        person_2 = data['person_2']
+        sal_fm = data['sal_fm']
+        sal_em = data['sal_em']
+        notes = data['notes']
+
+        conn = get_connection()
+        cursor = conn.cursor()
+
+        # Update the booking using an SQL UPDATE statement
+        update_query = "UPDATE bookings SET date = ?, person_1 = ?, person_2 = ?, sal_fm = ?, sal_em = ?, notes = ? WHERE id = ?"
+        cursor.execute(update_query, (date, person_1, person_2, sal_fm, sal_em, notes, _id))
+
+        conn.commit()
+        cursor.close()
+
+        return jsonify({'success': True})
+    except Exception as e:
+        print('Error updating value:', str(e))
+        return jsonify({'success': False, 'error_type': 0, 'error': 'Ett fel upptod!'}), 500
+
 
 # Route to handle the booking form submission
 @app.route('/add_booking', methods=['POST'])
@@ -149,7 +192,8 @@ def get_bookings():
                 'person_1': booking[2],
                 'person_2': booking[3],
                 'sal_fm': booking[4],
-                'sal_em': booking[5]
+                'sal_em': booking[5],
+                'notes': booking[6]
             }
             booking_list.append(booking_dict)
 
@@ -158,6 +202,58 @@ def get_bookings():
         print('Error fetching bookings:', str(e))
         return jsonify([])
 
+@app.route('/get_note', methods=['GET'])
+def get_notes():
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT notes FROM bookings ORDER BY date ASC")
+        notes = cursor.fetchall()
+        cursor.close()
+
+        # Extract the notes and create a list
+        note_list = [note[0] for note in notes]
+
+        return jsonify({'notes': note_list})
+    except Exception as e:
+        print('Error fetching notes:', str(e))
+        return jsonify({'error': 'An error occurred while fetching notes'})
+
+# Returns discord username for associeted name
+@app.route('/get_dcuid', methods=['POST'])
+def get_dcname():
+    try:
+        # Verify if the request is from the same server
+        client_ip = request.remote_addr
+        print(client_ip)
+        if client_ip == ip:
+            data = request.get_json()
+            name = data.get('name')
+            
+            # Fetch the associated discord name from the database
+            dcuid = fetch_discord_name(name)
+
+            if dcuid:
+                response = {
+                    'dcuid': dcuid
+                }
+                return jsonify(response), 200
+            else:
+                response = {
+                    'error': 'Discord uid not found'
+                }
+                return jsonify(response), 404
+        else:
+            response = {
+                'error': 'Unauthorized request'
+            }
+            return jsonify(response), 401
+    except Exception as e:
+        response = {
+            'error': str(e)
+        }
+        return jsonify(response), 500
+    
 # --------------------------------------------------------
 
 if __name__ == '__main__':
