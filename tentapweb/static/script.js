@@ -1,3 +1,5 @@
+API_ADDRESS = 'http://skolmen.ddns.net:56234'
+
 // Populate the date dropdown with options
 window.addEventListener('DOMContentLoaded', () => {
   // Call the function to add the event listener after the elements have been loaded
@@ -7,7 +9,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Fetch and return the bookings
 function fetchBookings() {
-  return fetch('http://skolmen.ddns.net:56234/get_bookings')
+  return fetch(API_ADDRESS + '/get_bookings')
     .then(response => response.json())
     .then(bookings => {
       return bookings;
@@ -25,7 +27,7 @@ function saveUpdatedValue() {
   const value = document.getElementById('valueInput').value;
 
   // Send the updated value to the server
-  fetch('http://skolmen.ddns.net:56234/update_booking', {
+  fetch(API_ADDRESS + '/update_booking', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -69,6 +71,8 @@ function updateData() {
       updateWhoBooks(bookings);
       // Update todays and tommorows rooms 
       updateRooms(bookings);
+      // Updates notes for bookings
+      updateNotes(bookings);
       // Populate the dropdown
       updateDateDropdown(bookings);
     })
@@ -252,6 +256,44 @@ function updateTable3(bookings) {
   });
 }
 
+//Updates notes
+function updateNotes(bookings) {
+  const currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0); // Set current date to midnight for comparison
+  const notesBox = document.getElementById('notes-box');
+
+  // Iterate through the bookings and update notes
+  bookings.forEach(booking => {
+    const bookingDate = new Date(booking.date);
+
+    // Check if the booking date is today or a future date
+    if (bookingDate >= currentDate) {
+      //const day = bookingDate.toLocaleString('sv-se', { weekday: 'short' });
+      const formattedDate = bookingDate.toLocaleDateString('sv-se', { year: 'numeric', month: 'numeric', day: 'numeric' });
+
+      // Only add a note if it exists
+      if (booking.notes) {
+        // Create a new <span> element for the note
+        const noteSpan = document.createElement('span');
+        //noteSpan.style.color = 'red';
+        noteSpan.style.fontWeight = 'bold';
+        noteSpan.textContent = `${formattedDate}: `;
+
+        // Create a <span> element for the note content
+        const noteContent = document.createElement('span');
+        noteContent.textContent = booking.notes;
+
+        // Create a line break element
+        const br = document.createElement('br');
+
+        // Append the note to the notes box
+        notesBox.appendChild(noteSpan);
+        notesBox.appendChild(noteContent);
+        notesBox.appendChild(br);
+      }
+    }
+  });
+}
 // Returns js date as iso 8601 yyyy-mm-dd
 function formatDate(date) {
   return date.toISOString().split('T')[0];
