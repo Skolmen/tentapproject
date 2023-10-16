@@ -15,6 +15,7 @@ body {
 /* Apply the animation to the notes element */
 .sal-box-wrapper.notes {
     animation: flashingBackground 1s infinite; /* Adjust the duration as needed */
+    display: none;
   }
 
 .main-wrapper {

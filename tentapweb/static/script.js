@@ -273,6 +273,7 @@ function updateNotes(bookings) {
 
       // Only add a note if it exists
       if (booking.notes) {
+        document.getElementById('notes').style.display = "block"
         // Create a new <span> element for the note
         const noteSpan = document.createElement('span');
         //noteSpan.style.color = 'red';
