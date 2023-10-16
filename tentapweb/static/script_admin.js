@@ -1,3 +1,5 @@
+API_ADDRESS = "http://skolmen.ddns.net:56234"
+
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('removeBookingButton').addEventListener('click', removeBooking);
     document.getElementById('bookingForm').addEventListener('submit', function(event) {
@@ -9,7 +11,8 @@ window.addEventListener('DOMContentLoaded', () => {
         person_fm: formData.get('person_fm'),
         person_em: formData.get('person_em'),
         sal_fm: formData.get('sal_fm'),
-        sal_em: formData.get('sal_em')
+        sal_em: formData.get('sal_em'),
+        notes: formData.get('note')
       };
       addBooking(data).then(() => {
         updateData();
@@ -20,7 +23,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // Fetch and return the bookings
 function fetchBookings() {
-  return fetch('http://skolmen.ddns.net:56234/get_bookings')
+  return fetch(API_ADDRESS + '/get_bookings')
     .then(response => response.json())
     .then(bookings => {
       return bookings;
@@ -45,7 +48,7 @@ function updateData() {
     });
 }
 
-// Updates the table 
+// Updates the table
 function updateTable(bookings) {
   // Populate table with bookings
   const table = document.getElementById('booking-table');
@@ -58,25 +61,82 @@ function updateTable(bookings) {
   // Populate table with bookings
   bookings.forEach(booking => {
     const row = table.insertRow();
-    
+
     const idCell = row.insertCell();
     idCell.textContent = booking.id;
 
     const dateCell = row.insertCell();
+    dateCell.contentEditable = true; 
     dateCell.textContent = booking.date;
 
     const person1Cell = row.insertCell();
+    person1Cell.contentEditable = true; 
     person1Cell.textContent = booking.person_1;
 
     const person2Cell = row.insertCell();
+    person2Cell.contentEditable = true; 
     person2Cell.textContent = booking.person_2;
 
     const salFmCell = row.insertCell();
+    salFmCell.contentEditable = true; 
     salFmCell.textContent = booking.sal_fm;
 
     const salEmCell = row.insertCell();
+    salEmCell.contentEditable = true; 
     salEmCell.textContent = booking.sal_em;
+
+    const noteCell = row.insertCell();
+    noteCell.contentEditable = true; 
+    noteCell.textContent = booking.notes;
+
+    const saveButtonCell = row.insertCell();
+    const saveButton = document.createElement('button');
+    saveButton.textContent = 'Save';
+    saveButtonCell.appendChild(saveButton);
+
+    // Attach a click event listener to the "Save" button
+    saveButton.addEventListener('click', () => {
+      // Get the updated data from the row
+      const updatedBooking = {
+        id: booking.id,
+        date: dateCell.textContent,
+        person_1: person1Cell.textContent,
+        person_2: person2Cell.textContent,
+        sal_fm: salFmCell.textContent,
+        sal_em: salEmCell.textContent,
+        notes: noteCell.textContent,
+      };
+
+      // Send the updated data to the server for saving (you need to implement this part)
+      editBooking(updatedBooking).then(() => {
+        updateData();
+      });
+    });
   });
+}
+
+function editBooking(data) {
+    // Send the data as JSON using fetch
+    return fetch(API_ADDRESS + '/edit_booking', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          // Handle success case
+          console.log('Booking edited successfully');
+        } else {
+          // Handle error case
+          console.error('Failed to edit booking:', result.error);
+        }
+      })
+      .catch(error => {
+        console.error('Error edit booking:', error);
+      });
 }
 
 // Populates the date dropdown menu
@@ -97,7 +157,7 @@ function removeBooking() {
   const bookingId = document.getElementById('removeBookingDropdown').value;
 
   // Send the request to remove the booking
-  fetch('http://skolmen.ddns.net:56234/remove_booking', {
+  fetch(API_ADDRESS + '/remove_booking', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -121,7 +181,7 @@ function removeBooking() {
 
 function addBooking(data) {  
   // Send the data as JSON using fetch
-  return fetch('http://skolmen.ddns.net:56234/add_booking', {
+  return fetch(API_ADDRESS + '/add_booking', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
