@@ -1,6 +1,5 @@
 import discord
 from discord.ext import commands
-import sqlite3
 import datetime
 import config
 import requests
@@ -67,6 +66,22 @@ def fetch_booking(date):
     except requests.exceptions.RequestException as e:
         print("Error: Failed to connect to the server:", str(e))
         return False
+
+async def get_user_id(name):
+    # Prepare the JSON payload
+    payload = {
+        'name': name
+    }
+
+    # Make a POST request to fetch the usernames from the API
+    response = requests.post(config.API_URL + "/get_dcuid", json=payload)
+
+    if response.status_code == 200:
+        data = response.json()
+        user_id = data['dcuid']
+        return user_id
+    else:
+        return None
 
 @bot.event
 async def on_ready():
@@ -151,6 +166,26 @@ async def hjälp(ctx):
     embed.add_field(name="!nybokning [parameters]", value="Uppdaterar SAL FM eller SAL EM för bokningen om två dagar.\nParameters: FM:[SAL FM] eller EM:[SAL EM].", inline=False)
     embed.add_field(name="!boka", value="Visar länken för bokning och bokningschema.", inline=False)
     await ctx.send(embed=embed)
+
+@bot.command()
+async def meddelabokare(ctx):
+    two_days_forward = datetime.date.today() + datetime.timedelta(days=2)
+    result = fetch_booking(str(two_days_forward))
+
+    if result:
+        person_1_id = await get_user_id(result['person_1']) #
+        person_2_id = await get_user_id(result['person_2']) #
+        person_1 = await bot.fetch_user(person_1_id)
+        person_2 = await bot.fetch_user(person_2_id)
+        mention_1 = person_1 .mention
+        mention_2 = person_2.mention
+        response = f"{mention_1}, FM och {mention_2}, EM ska boka salar för {two_days_forward}."
+    elif result is False:
+        response = "Ett fel har skett, försök igen senare."
+    else:
+        response = f"Det finns ingen som ska boka för {two_days_forward}."
+
+    await ctx.send(response)
 
 # Run the bot
 bot.run(config.DISCORD_TOKEN)
