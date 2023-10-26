@@ -1,4 +1,4 @@
-API_ADDRESS = 'http://skolmen.ddns.net:56234'
+API_ADDRESS = 'https://skolmen.asuscomm.com:56235'
 
 // Populate the date dropdown with options
 window.addEventListener('DOMContentLoaded', () => {
@@ -223,36 +223,41 @@ function updateTable3(bookings) {
 
   // Populate table with bookings
   bookings.forEach(booking => {
-    const row = table.insertRow();
-
     // Format the date
     const date = new Date(booking.date);
     const formattedDate = booking.date;
-    const day = date.toLocaleString('sv-se', { weekday: 'short' });
+    
     const currentDate = new Date();
     currentDate.setHours(0, 0, 0, 0); // Set current date to midnight for comparison
 
-    if (date < currentDate) {
-      row.classList.add('main-mid-list-table-tr-completed');
+    if (date > currentDate) {
+
+      const row = table.insertRow();
+
+      const day = date.toLocaleString('sv-se', { weekday: 'short' });
+
+      //if (date < currentDate) {
+      //  row.classList.add('main-mid-list-table-tr-completed');
+      //}
+      
+      const dateCell = row.insertCell();
+      dateCell.textContent = formattedDate;
+
+      const dayCell = row.insertCell();
+      dayCell.textContent = day;
+
+      const person1Cell = row.insertCell();
+      person1Cell.textContent = booking.person_1;
+
+      const person2Cell = row.insertCell();
+      person2Cell.textContent = booking.person_2;
+
+      const salFmCell = row.insertCell();
+      salFmCell.textContent = booking.sal_fm;
+
+      const salEmCell = row.insertCell();
+      salEmCell.textContent = booking.sal_em;
     }
-    
-    const dateCell = row.insertCell();
-    dateCell.textContent = formattedDate;
-
-    const dayCell = row.insertCell();
-    dayCell.textContent = day;
-
-    const person1Cell = row.insertCell();
-    person1Cell.textContent = booking.person_1;
-
-    const person2Cell = row.insertCell();
-    person2Cell.textContent = booking.person_2;
-
-    const salFmCell = row.insertCell();
-    salFmCell.textContent = booking.sal_fm;
-
-    const salEmCell = row.insertCell();
-    salEmCell.textContent = booking.sal_em;
   });
 }
 

@@ -1,4 +1,4 @@
-API_ADDRESS = "http://skolmen.ddns.net:56234"
+API_ADDRESS = "http://skolmen.ddns.net:56235"
 
 window.addEventListener('DOMContentLoaded', () => {
     document.getElementById('removeBookingButton').addEventListener('click', removeBooking);
