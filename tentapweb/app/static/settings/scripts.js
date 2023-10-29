@@ -1,43 +1,79 @@
-function urlB64ToUint8Array(base64String) {
-    const padding = '='.repeat((4 - base64String.length % 4) % 4);
-    const base64 = (base64String + padding)
-      .replace(/\-/g, '+')
-      .replace(/_/g, '/');
-  
-    const rawData = window.atob(base64);
-    const outputArray = new Uint8Array(rawData.length);
-  
-    for (let i = 0; i < rawData.length; ++i) {
-      outputArray[i] = rawData.charCodeAt(i);
-    }
-    return outputArray;
-  }
-  
-  function updateSubscriptionOnServer(subscription, apiEndpoint) {
-    // TODO: Send subscription to application server
-  
-    return fetch(apiEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        subscription_json: JSON.stringify(subscription)
-      })
+window.addEventListener('load', function () {
+  Notification.requestPermission()
+    .then(function (permission) {
+      if (permission === 'granted') {
+        // The user has granted permission for push notifications
+        // You can now subscribe the user to receive push notifications.
+      } else if (permission === 'denied') {
+        // The user has denied permission for push notifications
+      }
+    })
+    .catch(function (error) {
+      console.error('Error while requesting permission:', error);
     });
-  
+});
+
+function urlB64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, '+')
+    .replace(/_/g, '/');
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
   }
-  
-  function subscribeUser(swRegistration, applicationServerPublicKey, apiEndpoint) {
+  return outputArray;
+}
+
+function registerServiceWorker(serviceWorkerUrl, onRegistrationComplete) {
+  var worker = null;
+
+  if ('serviceWorker' in navigator && 'PushManager' in window) {
+    console.log('Service Worker and Push are supported');
+
+    navigator.serviceWorker.register(serviceWorkerUrl)
+      .then(function (swReg) {
+        console.log('Service Worker is registered', swReg);
+
+        // Call the provided callback function to execute custom logic
+        if (typeof onRegistrationComplete === 'function') {
+          onRegistrationComplete(swReg);
+        }
+
+        worker = swReg;
+      })
+      .catch(function (error) {
+        console.error('Service Worker Error', error);
+      });
+  } else {
+    console.warn('Push messaging is not supported');
+  }
+
+  return worker;
+}
+
+function subscribeUser(serviceWorkerUrl, applicationServerPublicKey) {
+  registerServiceWorker(serviceWorkerUrl, function (swReg) {
     const applicationServerKey = urlB64ToUint8Array(applicationServerPublicKey);
-    swRegistration.pushManager.subscribe({
+    swReg.pushManager.subscribe({
       userVisibleOnly: true,
       applicationServerKey: applicationServerKey
     })
     .then(function(subscription) {
       console.log('User is subscribed.');
   
-      return updateSubscriptionOnServer(subscription, apiEndpoint);
+      return fetch("/api/push-subscriptions", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          subscription_json: JSON.stringify(subscription)
+        })
+      });
   
     })
     .then(function(response) {
@@ -56,31 +92,47 @@ function urlB64ToUint8Array(base64String) {
       console.log('Failed to subscribe the user: ', err);
       console.log(err.stack);
     });
-  }
-  
-  function registerServiceWorker(serviceWorkerUrl, applicationServerPublicKey, apiEndpoint){
-    let swRegistration = null;
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      console.log('Service Worker and Push is supported');
-  
-      navigator.serviceWorker.register(serviceWorkerUrl)
-      .then(function(swReg) {
-        console.log('Service Worker is registered', swReg);
-        subscribeUser(swReg, applicationServerPublicKey, apiEndpoint);
-  
-        swRegistration = swReg;
+  });
+}
+
+function unSubscribe(serviceWorkerUrl) {
+  registerServiceWorker(serviceWorkerUrl, function (swReg) {
+    swReg.pushManager.getSubscription().then((subscription) => {
+
+      if (subscription === null)
+        return
+
+      subscription
+      .unsubscribe()
+      .then((successful) => {
+        return fetch("/api/push-unsubscribe", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            subscription_json: JSON.stringify(subscription)
+          })
+        });
       })
-      .catch(function(error) {
-        console.error('Service Worker Error', error);
+      .catch((e) => {
+        console.log(e)
       });
-    } else {
-      console.warn('Push messaging is not supported');
-    } 
-    return swRegistration;
-  }
+    });
+  });
+}
 
+function seeSubscription(serviceWorkerUrl){
+  registerServiceWorker(serviceWorkerUrl, function (swReg) {
+    swReg.pushManager.getSubscription()
+    .then((subscription) => {
+      console.log(subscription)
+    })
+  });
 
-const notificationForm = document.getElementById('notification-form');
+}
+
+/*const notificationForm = document.getElementById('notification-form');
 notificationForm.addEventListener('submit', function (e) {
     e.preventDefault(); // Prevent the default form submission
 
@@ -107,4 +159,4 @@ notificationForm.addEventListener('submit', function (e) {
     .catch(error => {
         console.error('An error occurred:', error);
     });
-});
+});*/
