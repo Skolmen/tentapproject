@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='settings/stylesheet.css') }}">
+    <script>
+        const VAPID_PUBLIC_KEY = "{{config['VAPID_PUBLIC_KEY']}}"
+    </script>
+    <script src="{{ url_for('static', filename='settings/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='worker.js') }}"></script>
+    <script>requestNotificationPermission()</script>
+    <title>Bokningar</title>
+</head>
+<body>
+    <!-- Your HTML content -->
+    <div class="top">
+        <h1>⚙ Inställningar</h1>
+    </div>
+    <div class="mid">
+        <div class="sub-setting">
+            <h2>🔔 Notiser</h2>
+            <form id="notification-form">
+                <label for="notifications-on">På</label>
+                <input type="radio" name="notification-status" id="notifications-on" value="on">
+                <label for="notifications-off">Av</label>
+                <input type="radio" name="notification-status" id="notifications-off" value="off">
+
+                <br>
+
+                <label for="person">Person</label>
+                <select name="person" id="person">
+                    <option value="1">Test</option>
+                    <option value="1">Te</option>
+                    <option value="1">Tst</option>
+                    <option value="1">Tet</option>
+                </select>
+
+                <br>
+
+                <button type="submit">Spara</button>
+            </form>
+        </div>
+    </div>
+
+    <button onclick="subscribeUser('/static/worker.js', VAPID_PUBLIC_KEY)">Subscribe</button>
+    <button onclick="seeSubscription('/static/worker.js')">logga subscription</button>
+    <button onclick="unSubscribe('/static/worker.js')">Unsub</button>
+
+
+    <!-- Register the service worker -->
+    <script type="text/javascript">
+		registerServiceWorker(
+			"/static/worker.js",
+			"{{config['VAPID_PUBLIC_KEY']}}",
+			"/api/push-subscriptions"
+		);
+	</script>
+</body>
+</html>

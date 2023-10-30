@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='booking/stylesheet.css') }}">
+    <title>Bokningar</title>
+</head>
+<body>
+    <div class="top">
+        <h1>📆 Bokningar</h1>
+    </div>
+
+    <div class="mid">
+        <div class="new_booking">
+            <span class="subheading-wrap">
+                <h2>🆕 Ny bokning</h2>
+                <div>🔽</div>
+            </span>
+            <form id="new-bookingform">
+                <!-- Date Selector -->
+                <label for="date">Datum:</label>
+                <input type="date" id="date" name="date" required>
+                <br><br>
+        
+                <!-- Dropdown for Person FM -->
+                <label for="person_fm">Person FM:</label>
+                <select id="person_fm" name="person_fm">
+                    <!-- Populate with javascript -->
+                </select>
+                <br><br>
+        
+                <!-- Dropdown for Person EM -->
+                <label for="person_em">Person EM:</label>
+                <select id="person_em" name="person_em">
+                    <!-- Populate with javascript -->
+                </select>
+                <br><br>
+        
+                <!-- Input field for Sal FM -->
+                <label for="sal_fm">Sal FM:</label>
+                <input type="text" id="sal_fm" name="sal_fm">
+                <br><br>
+        
+                <!-- Input field for Sal EM -->
+                <label for="sal_em">Sal EM:</label>
+                <input type="text" id="sal_em" name="sal_em">
+                <br><br>
+        
+                <!-- Textbox for Avvikelser -->
+                <label for="avvikelser">Avvikelser:</label>
+                <textarea id="avvikelser" name="avvikelser" rows="4" cols="40"></textarea>
+                <br><br>
+        
+                <!-- Submit Button -->
+                <input type="submit" value="Spara bokning">
+            </form>
+        </div>
+        <div class="edit_booking">
+            <span class="subheading-wrap">
+                <h2>📝 Redigera bokning</h2>
+                <div>🔽</div>
+            </span>
+        </div>
+        <div>
+            <h2>📅 Alla bokningar</h2>
+            <table id="booking-table">
+                <tr>
+                    <th>ID</th>
+                    <th>Date</th>
+                    <th>Person 1</th>
+                    <th>Person 2</th>
+                    <th>Sal FM</th>
+                    <th>Sal EM</th>
+                    <th>Avvikelse</th>
+                </tr>
+            </table>
+        </div>
+    </div>
+</body>
+</html>
