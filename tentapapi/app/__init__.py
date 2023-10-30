@@ -14,14 +14,14 @@ def create_app(config_class=Config):
     # Initialize Flask extensions here
     db.init_app(app)
 
-
     # Register blueprints here
+    
+    #Bookings
     from app.routes.bookings_routes import bp as booking_bp    
     app.register_blueprint(booking_bp)
-    
+
+    #Persons     
     from app.routes.persons_routes import bp as persons_bp
     app.register_blueprint(persons_bp)
-
-
 
     return app
