@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='settings/stylesheet.css') }}">
     <script>
         const VAPID_PUBLIC_KEY = "{{config['VAPID_PUBLIC_KEY']}}"
     </script>
-    <script src="{{ url_for('static', filename='settings/scripts.js') }}"></script>
     <script src="{{ url_for('static', filename='worker.js') }}"></script>
+    <script src="{{ url_for('static', filename='settings/scripts.js') }}"></script>
     <script>requestNotificationPermission()</script>
     <title>Bokningar</title>
 </head>
@@ -43,6 +45,8 @@
         </div>
     </div>
 
+    <div id="t">f</div>
+
     <button onclick="subscribeUser('/static/worker.js', VAPID_PUBLIC_KEY)">Subscribe</button>
     <button onclick="seeSubscription('/static/worker.js')">logga subscription</button>
     <button onclick="unSubscribe('/static/worker.js')">Unsub</button>
@@ -50,11 +54,82 @@
 
     <!-- Register the service worker -->
     <script type="text/javascript">
-		registerServiceWorker(
+		/*registerServiceWorker(
 			"/static/worker.js",
 			"{{config['VAPID_PUBLIC_KEY']}}",
 			"/api/push-subscriptions"
-		);
+		);*/
 	</script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js'
+        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"
+
+        console.log('Requesting permission...');
+        document.getElementById('t').innerHTML = ('Requesting permission...');
+
+
+        Notification.requestPermission().then(function(permission) { console.log('permiss', permission)});
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBfdkSqHTViEFscPcNF7Ra6LSW9CMgOEbM",
+            authDomain: "tenta-p-784b0.firebaseapp.com",
+            projectId: "tenta-p-784b0",
+            storageBucket: "tenta-p-784b0.appspot.com",
+            messagingSenderId: "265671814701",
+            appId: "1:265671814701:web:b68a92a3a1771a155592a4"
+        };
+        
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        
+        // Get registration token. Initially this makes a network call, once retrieved
+        // subsequent calls to getToken will return from cache.
+        const messaging = getMessaging();
+
+        console.log(messaging)
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/static/firebase-messaging-sw.js')
+              .then(function(registration) {
+                console.log('Registration successful, scope is:', registration.scope);
+                getToken(messaging, { serviceWorkerRegistration:registration, vapidKey: VAPID_PUBLIC_KEY })
+                .then((currentToken) => {
+                if (currentToken) {
+                    console.log(currentToken)
+                    //alert(currentToken)
+                    document.getElementById('t').innerHTML = (currentToken);
+
+                    // Send the token to your server and update the UI if necessary
+                    // ...
+                } else {    
+                    // Show permission request UI
+                    console.log('No registration token available. Request permission to generate one.');
+
+                    document.getElementById('t').innerHTML = ('No registration token available. Request permission to generate one.');
+                    // ...
+                }
+                }).catch((err) => {
+                console.log('An error occurred while retrieving token. ', err);
+                document.getElementById('t').innerHTML = ('An error occurred while retrieving token. ');
+
+                // ...
+                });
+              }).catch(function(err) {
+                console.log('Service worker registration failed, error:', err);
+                document.getElementById('t').innerHTML = ('Service worker registration failed, error:');
+
+              });
+          }
+          else {
+            document.getElementById('t').innerHTML = ('No sw 😭😭😭');
+          }
+
+          onMessage(messaging, (payload) => {
+            console.log('Message received. ', payload);
+            // ...
+          });
+
+    </script>
 </body>
 </html>
