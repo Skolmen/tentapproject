@@ -71,6 +71,30 @@ def get_tokens():
         print(f"Error: {str(e)}")
         return "Internal Server Error", 500
     
+@bp.route('/token', methods=['PUT'])
+@api_key_required
+def update_token():
+    try:
+        data = request.get_json()
+        
+        required_fields = ['old_token', 'new_token']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return f"Missing fields: {', '.join(missing_fields)}", 400
+        
+        token = FCMToken.query.filter_by(token=data['old_token']).first()
+        if not token:
+            return "Token not found", 404
+        
+        token.token = data['new_token']
+        db.session.commit()
+        
+        return token.to_json(), 200  # OK
+    except Exception as e:
+        # Log the error for debugging purposes
+        print(f"Error: {str(e)}")
+        return "Internal Server Error", 500
+    
 #Notify all users with a token in the database
 @bp.route('/notify', methods=['POST'])
 @api_key_required

@@ -41,12 +41,15 @@
                 <button type="submit">Spara</button>
             </form>
 
+            <button id="sub">Dummy new token</button>
+            <button id="del">Dummy delete token</button>
+
         </div>
     </div>
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
-    import { subscribeToNotifications, unSubscribeToNotifications } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { subscribeToNotifications, unSubscribeToNotifications, detectNewToken, newTokenForTesting, deleteTokenForTesting } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
     import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
 
     //Check notification status from local storage update it so if
@@ -85,6 +88,17 @@
     if (localStorage.getItem('person_id')) {
         document.getElementById('person').value = localStorage.getItem('person_id');
     }
+
+
+    detectNewToken();
+
+    document.getElementById('sub').addEventListener('click', () => {
+        newTokenForTesting();
+    });
+
+    document.getElementById('del').addEventListener('click', () => {
+        deleteTokenForTesting();
+    });
 
 
 </script>

@@ -55,6 +55,36 @@ def remove_toke_from_server():
     except requests.exceptions.RequestException as e:
         return f'Request error: {str(e)}', 500
     
+    
+@bp.route("/updateToken", methods=["POST"])
+def update_token():
+    print("updateToken")
+    try:
+        json_data = request.get_json()
+        print(json_data)
+        old_token = json_data['old_token']
+        new_token = json_data['new_token']
+        
+        response = requests.put(current_app.config['TP_API'] + "messaging/token", json={
+            'old_token': old_token,
+            'new_token': new_token
+        }, headers={
+            'X-API-Key': current_app.config['TP_API_KEY']
+        })
+        
+        print(response.status_code)
+        print(current_app.config['TP_API'] + "messaging/token")
+        
+        if response.status_code == 200:
+            return jsonify({
+                "status": "updated",
+            }), 200
+        else:
+            return f'Request failed with status code: {response.status_code}', response.status_code
+        
+    except requests.exceptions.RequestException as e:
+        return f'Request error: {str(e)}', 500
+
 @bp.route("/persons", methods=['GET'])
 def get_persons():
     try:
