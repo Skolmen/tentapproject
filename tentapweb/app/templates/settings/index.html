@@ -46,7 +46,7 @@
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
-    import { subscribeToNotifications, unSubscribeToNotifications, detectNewToken, newTokenForTesting, deleteTokenForTesting } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { subscribeToNotifications, unSubscribeToNotifications, detectNewToken } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
     import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
 
     //Check notification status from local storage update it so if
