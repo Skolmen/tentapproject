@@ -1,3 +1,4 @@
 start_api.bash
 config.py
 __pycache__/
+config/firebase-config-cred.json

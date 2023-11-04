@@ -23,5 +23,9 @@ def create_app(config_class=Config):
     #Persons     
     from app.routes.persons_routes import bp as persons_bp
     app.register_blueprint(persons_bp)
+    
+    #Token management
+    from app.routes.messaging_routes import bp as messaging_bp
+    app.register_blueprint(messaging_bp, url_prefix="/messaging")
 
     return app
