@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, send_from_directory
 
 from config import Config
 from app.extensions import db
@@ -34,6 +34,15 @@ def create_app(config_class=Config):
     from app.api import bp as bp_api
     app.register_blueprint(bp_api, url_prefix="/api")
     
+    #FW config
+    @app.route('/config/firebase-config')
+    def fw_config():
+        return send_from_directory('config', "firebase-config.js")
+    
+    #FCM Service Worker
+    @app.route('/firebase-messaging-sw.js')
+    def fcm_sw():
+        return send_from_directory('static', "firebase-messaging-sw.js")
 
 
     return app

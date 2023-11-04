@@ -1,113 +1,106 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main/stylesheet.css') }}">
-    <script src="{{ url_for('static', filename='main/script.js') }}"></script>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📕</text></svg>">
-    <title>Tenta-P HT23.1</title>
-</head>
-<body>
-    <div class="main-wrapper">
-        <div class="main-top">
-            <h1>📕 Tenta-P HT23.1</h1>
-            <div class="sal-box-wrapper notes" id="notes">
-                <h3 style="margin-top: 0px;">🚨 Avvikelser 🚨</h4>
-                <p style="text-align: left;" id="notes-box">
+{% extends "components/base.html" %}
+{% block page_title %}Start{% endblock %}
+{% block head %}
+  {{ super() }}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main/stylesheet.css') }}">
+  <script src="{{ url_for('static', filename='main/script.js') }}"></script>
+{% endblock %}
+{% block content %}
+<div class="main-wrapper">
+    <div class="main-top">
+        <h1>📕 Tenta-P HT23.1</h1>
+        <div class="sal-box-wrapper notes" id="notes">
+            <h3 style="margin-top: 0px;">🚨 Avvikelser 🚨</h4>
+            <p style="text-align: left;" id="notes-box">
 
-                </p>
+            </p>
+        </div>
+        <div class="sal-box-wrapper">
+            <h3>🏫 Dagens salar</h3>
+            <div class="sal-box">
+              <span class="sal-label">Sal FM 09:15-13:00:</span>
+              <span id="today-salFmValue">-</span>
             </div>
-            <div class="sal-box-wrapper">
-                <h3>🏫 Dagens salar</h3>
-                <div class="sal-box">
-                  <span class="sal-label">Sal FM 09:15-13:00:</span>
-                  <span id="today-salFmValue">-</span>
-                </div>
-                <div class="sal-box">
-                  <span class="sal-label">Sal EM 13:15-17:00:</span>
-                  <span id="today-salEmValue">-</span>
-                </div>
+            <div class="sal-box">
+              <span class="sal-label">Sal EM 13:15-17:00:</span>
+              <span id="today-salEmValue">-</span>
             </div>
-            <div class="sal-box-wrapper">
-                <h3>🔜 Morgondagens salar</h3>
-                <div class="sal-box">
-                  <span class="sal-label">Sal FM 09:15-13:00:</span>
-                  <span id="tomorrow-salFmValue">-</span>
-                </div>
-                <div class="sal-box">
-                  <span class="sal-label">Sal EM 13:15-17:00:</span>
-                  <span id="tomorrow-salEmValue">-</span>
-                </div>
+        </div>
+        <div class="sal-box-wrapper">
+            <h3>🔜 Morgondagens salar</h3>
+            <div class="sal-box">
+              <span class="sal-label">Sal FM 09:15-13:00:</span>
+              <span id="tomorrow-salFmValue">-</span>
             </div>
-        </div>    
-        <div class="main-mid">
-            <!--<img src="{{ url_for('static', filename='images/7f5gy1.gif') }}"/>-->
-            <div class="who-books-box">
-                <h3>📆 Idag bokar:</h3>
-                <div id="bookingNames"></div>
-                <p>för den <span id="bookingDate"></span></p>
-              </div>
-            <div class="main-mid-infobox">
-                <h3>ℹ️ Information</h3>
-                <p>Bokning av sal sker i:</p>
-                <ul>
-                    <li><a href="https://cloud.timeedit.net/liu/web/wr_stud/ri1Q8.html">TimeEdit</a></li>
-                    <li>Liu-appen</li>
-                </ul>
-                <p style="text-align: left;">
-                    Förmiddag (Fm): Bokar 09:15-13:00 <br>
-                    Eftermiddag (Em): Bokar 13:15-17:00 <br>
-                    <br>
-                    Var redo att boka 21:55 2 dagar innan! <br>
-                    <p style="color: red; font-weight: 900; margin: 0;">Boka inte P26! Finns inga bord!</p>
-                </p>
-                <h4 style="margin-bottom: 0px;">🔼 Följande salar ska prioriteras</h4>
-                <ol>
-                    <li>KY23, alternativ annat klassrum i key</li>
-                    <li>Grupprum i key, KG36 helst högsta vånningen</li>
-                    <li>Klassrum i C-huset, <span style="color: red; font-weight: 900; margin: 0;">helst T27, alt. andra T-salar</span></li>
-                    <li>Grupprum i SH</li>
-                    <li>Grupprum i A-hsuet</li>
-                    <li>Grupprum isytan 🤢🤮</li> 
-                </ol>
+            <div class="sal-box">
+              <span class="sal-label">Sal EM 13:15-17:00:</span>
+              <span id="tomorrow-salEmValue">-</span>
             </div>
-            <div class="main-mid-list">
-                <h3>📅 Bokningsschema</h3>
-                <div class="main-mid-changebox">
-                    <!-- Dropdown for selecting the date -->
-                    <select id="dateDropdown">
-                    <!-- Options will be populated dynamically -->
-                    </select>
-    
-                    <!-- Dropdown for selecting FM or EM -->
-                    <select id="typeDropdown">
-                    <option value="FM">FM</option>
-                    <option value="EM">EM</option>
-                    </select>
-    
-                    <!-- Input field for entering the value -->
-                    <input type="text" id="valueInput" placeholder="Salsnamn">
-    
-                    <!-- Button to save the updated value -->
-                    <button id="saveButton">Spara</button>
-                </div>
-                <table id="id-main-mid-list-table">
-                    <tr>
-                        <th>Datum</th>
-                        <th>Dag</th>
-                        <th>Fm</th>
-                        <th>Em</th>
-                        <th>Sal: Fm</th>
-                        <th>Sal: Em</th>
-                    </tr>
-                    <!-- Här ska data läggas in med javascript -->
-                </table>
+        </div>
+    </div>    
+    <div class="main-mid">
+        <!--<img src="{{ url_for('static', filename='images/7f5gy1.gif') }}"/>-->
+        <div class="who-books-box">
+            <h3>📆 Idag bokar:</h3>
+            <div id="bookingNames"></div>
+            <p>för den <span id="bookingDate"></span></p>
+          </div>
+        <div class="main-mid-infobox">
+            <h3>ℹ️ Information</h3>
+            <p>Bokning av sal sker i:</p>
+            <ul>
+                <li><a href="https://cloud.timeedit.net/liu/web/wr_stud/ri1Q8.html">TimeEdit</a></li>
+                <li>Liu-appen</li>
+            </ul>
+            <p style="text-align: left;">
+                Förmiddag (Fm): Bokar 09:15-13:00 <br>
+                Eftermiddag (Em): Bokar 13:15-17:00 <br>
+                <br>
+                Var redo att boka 21:55 2 dagar innan! <br>
+                <p style="color: red; font-weight: 900; margin: 0;">Boka inte P26! Finns inga bord!</p>
+            </p>
+            <h4 style="margin-bottom: 0px;">🔼 Följande salar ska prioriteras</h4>
+            <ol>
+                <li>KY23, alternativ annat klassrum i key</li>
+                <li>Grupprum i key, KG36 helst högsta vånningen</li>
+                <li>Klassrum i C-huset, <span style="color: red; font-weight: 900; margin: 0;">helst T27, alt. andra T-salar</span></li>
+                <li>Grupprum i SH</li>
+                <li>Grupprum i A-hsuet</li>
+                <li>Grupprum isytan 🤢🤮</li> 
+            </ol>
+        </div>
+        <div class="main-mid-list">
+            <h3>📅 Bokningsschema</h3>
+            <div class="main-mid-changebox">
+                <!-- Dropdown for selecting the date -->
+                <select id="dateDropdown">
+                <!-- Options will be populated dynamically -->
+                </select>
+
+                <!-- Dropdown for selecting FM or EM -->
+                <select id="typeDropdown">
+                <option value="FM">FM</option>
+                <option value="EM">EM</option>
+                </select>
+
+                <!-- Input field for entering the value -->
+                <input type="text" id="valueInput" placeholder="Salsnamn">
+
+                <!-- Button to save the updated value -->
+                <button id="saveButton">Spara</button>
             </div>
-            <a style="margin: 10px 0 20px 0" href="https://github.com/Skolmen/tentapproject">Se projektet på Github</a>
+            <table id="id-main-mid-list-table">
+                <tr>
+                    <th>Datum</th>
+                    <th>Dag</th>
+                    <th>Fm</th>
+                    <th>Em</th>
+                    <th>Sal: Fm</th>
+                    <th>Sal: Em</th>
+                </tr>
+                <!-- Här ska data läggas in med javascript -->
+            </table>
         </div>
     </div>
-
-</body>
-</html>
+</div>
+{% endblock %}

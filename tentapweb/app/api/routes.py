@@ -1,69 +1,76 @@
-from flask import request, jsonify
-import json
+from flask import request, jsonify, current_app
+import requests
 
 from app.api import bp
-from app.models.pushsubscription import PushSubscription
 from app.extensions import db
-from app.utils.push import trigger_push_notifications_for_subscriptions
 
-@bp.route("/push-subscriptions", methods=["POST"])
-def create_push_subscription():
-    json_data = request.get_json()
-    
-    
-    subscription_json=json_data['subscription_json']
-    
-    endpoint = json.loads(subscription_json)['endpoint']
-    
-    subscription = PushSubscription.query.filter_by(
-        subscription_json=json_data['subscription_json']
-    ).first()
-    if subscription is None:
-        subscription = PushSubscription(
-            subscription_json=json_data['subscription_json'],
-            endpoint = endpoint,
-            person_id = 6
-        )
-        db.session.add(subscription)
-        db.session.commit()
-    return jsonify({
-        "status": "success"
-    })
-    
-@bp.route("/push-unsubscribe", methods=["POST"])
-def unsubscribe():
-    json_data = request.get_json()
-    
-    subscription_json = json_data['subscription_json']
-    endpoint = json.loads(subscription_json)['endpoint']
-
-    # Find the subscription based on the endpoint
-    subscription = PushSubscription.query.filter_by(endpoint=endpoint).first()
-
-    if subscription is not None:
-        # If the subscription exists, delete it from the database
-        db.session.delete(subscription)
-        db.session.commit()
-        return jsonify({
-            "status": "unsubscribed",
+@bp.route("/subscribe", methods=["POST"])
+def send_token_to_server():
+    # Send token to application server
+    try:        
+        json_data = request.get_json()
+        
+        token = json_data['token']
+        print(token)
+        person_id = json_data['person_id']
+        
+        response = requests.post(current_app.config['TP_API'] + "messaging/token", json={
+            'token': token,
+            'person_id': person_id
+        }, headers={
+            'X-API-Key': current_app.config['TP_API_KEY']
         })
-    else:
-        # If the subscription doesn't exist, you can return an appropriate error response
-        return jsonify({
-            "status": "subscription not found",
+        
+        if response.status_code == 200:
+            return jsonify({
+                "status": "subscribed",
+            }), 200 # OK
+        else:
+            return f'Request failed with status code: {response.status_code}', response.status_code
+        
+    except requests.exceptions.RequestException as e:
+        return f'Request error: {str(e)}', 500
+
+
+@bp.route("/unsubscribe", methods=["POST"])
+def remove_toke_from_server():
+    try:
+        json_data = request.get_json()
+        
+        token = json_data['token']
+               
+        response = requests.delete(current_app.config['TP_API'] + "messaging/token", json={
+            'token': token
+        }, headers={
+            'X-API-Key': current_app.config['TP_API_KEY']
         })
+        
+        if response.status_code == 204:
+            return jsonify({
+                "status": "unsubscribed",
+            }), 200 # OK
+        else:
+            return f'Request failed with status code: {response.status_code}', response.status_code
+        
+    except requests.exceptions.RequestException as e:
+        return f'Request error: {str(e)}', 500
     
-@bp.route("/trigger-push-notifications", methods=["POST"])
-def trigger_push_notifications():
-    json_data = request.get_json()
-    subscriptions = PushSubscription.query.all()
-    results = trigger_push_notifications_for_subscriptions(
-        subscriptions,
-        json_data.get('title'),
-        json_data.get('body')
-    )
-    return jsonify({
-        "status": "success",
-        "result": results
-    })
- 
+@bp.route("/persons", methods=['GET'])
+def get_persons():
+    try:
+        # Make the GET request with custom headers
+        response = requests.get(current_app.config['TP_API'] + "person", headers={
+            'X-API-Key': current_app.config['TP_API_KEY']
+        })
+
+        # Check if the request was successful (status code 200)
+        if response.status_code == 200:
+            data = response.json()  # Parse the response JSON
+            return data
+        else:
+            return f'Request failed with status code: {response.status_code}', response.status_code
+
+    except requests.exceptions.RequestException as e:
+        return f'Request error: {str(e)}', 500
+    
+

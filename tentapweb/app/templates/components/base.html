@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    {% block head %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <script src="{{ url_for('static', filename='global/global-scripts.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='global/modal.js') }}"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='global/globalstyles.css') }}">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📕</text></svg>">
+    <title>{% block page_title %}{% endblock %} - TentaP</title>
+    {% endblock %}
+</head>
+
+<body>
+    <div class="modal-outer" id="modal">
+        <div class="modal-inner" id="modalInner">
+            <div class="modal-content" id="modalContent">
+                😚😚😚😚😚
+            </div>
+        </div>
+    </div>
+    <div class="page_wrapper">
+        <div class="content_wrapper">
+            <div class="header">
+                <h1>{% block heading %}{% endblock %}</h1>
+            </div>
+            <div class="content">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+    <div class="sticky-navbar">
+        <a href="{{ url_for('main.index') }}">
+            <span>🏠</span>
+            <span>Hem</span>
+        </a>
+        <a href="{{ url_for('booking.index') }}">
+            <span>📅</span>
+            <span>Bokningar</span>
+        </a>
+        <a href="{{ url_for('admin.index') }}">
+            <span>🔒</span>
+            <span>Admin</span>
+        </a>
+        <a href="{{ url_for('settings.index') }}">
+            <span>⚙</span>
+            <span>Inställningar</span>
+        </a>
+    </div>
+    {% block endOfBody %}
+    {% endblock %}
+</body>
+
+</html>

@@ -2,3 +2,4 @@ apikeys/config.py
 apikeys/__pycache__
 tentapapi/.env
 tentapweb/.env
+*.pyv

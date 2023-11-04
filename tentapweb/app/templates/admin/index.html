@@ -1,124 +1,16 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Admin Page</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="{{ url_for('static', filename='admin/script_admin.js') }}"></script>
-  <style>
-      body {
-          font-family: Arial, sans-serif;
-      }
-
-      h1, h2 {
-          text-align: center;
-      }
-
-      form {
-          max-width: 400px;
-          margin: 0 auto;
-      }
-
-      label, input, button, select {
-          display: block;
-          width: 100%;
-      }
-
-      label {
-          margin-top: 10px;
-      }
-
-      input, select {
-          padding: 5px;
-          margin-top: 5px;
-      }
-
-      button {
-          padding: 8px;
-          margin-top: 10px;
-      }
-
-      table {
-          width: 100%;
-          border-collapse: collapse;
-      }
-
-      th, td {
-          padding: 8px;
-          text-align: left;
-      }
-
-      @media only screen and (max-width: 600px) {
-          form {
-              max-width: 100%;
-          }
-
-          label, input, button, select {
-              display: inline-block;
-              width: 90%;
-              margin-top: 5px;
-          }
-
-          button {
-              width: 90%;
-              margin-top: 10px;
-          }
-
-          table {
-              font-size: 14px;
-          }
-      }
-  </style>
-</head>
-<body>
-  <h1>Admin</h1>
-
-
-  {% if error %}
-  <p style="color: red;">{{ error }}</p>
-  {% endif %}
-  <form id="bookingForm">
-    <label for="date">Datum:</label>
-    <input type="date" id="date" name="date" required>
-
-    <label for="person_fm">Person FM:</label>
-    <input type="text" id="person_fm" name="person_fm">
-
-    <label for="person_em">Person EM:</label>
-    <input type="text" id="person_em" name="person_em">
-
-    <label for="sal_fm">Sal FM:</label>
-    <input type="text" id="sal_fm" name="sal_fm">
-
-    <label for="sal_em">Sal EM:</label>
-    <input type="text" id="sal_em" name="sal_em">
-
-    <label for="sal_em">Anteckning:</label>
-    <input type="text" id="note" name="note">
-
-    <button type="submit">Lägg till bokning</button>
-  </form>
-
-  <div class="main-mid-changebox">
-    <!-- Dropdown for selecting the booking to remove -->
-    <select id="removeBookingDropdown">
-      <!-- Options will be populated dynamically -->
-    </select>
-  
-    <!-- Button to remove the selected booking -->
-    <button id="removeBookingButton">Ta bort bokning</button>
-  </div>
-
-  <h2>Alla bookningar</h2>
-  <table id="booking-table">
-      <tr>
-          <th>ID</th>
-          <th>Date</th>
-          <th>Person 1</th>
-          <th>Person 2</th>
-          <th>Sal FM</th>
-          <th>Sal EM</th>
-          <th>Anteckning</th>
-      </tr>
-  </table>
-</body>
-</html>
+{% extends "components/base.html" %}
+{% block page_title %}Admin{% endblock %}
+{% block head %}
+  {{ super() }}
+{% endblock %}
+{% block heading %}
+🔒 Admin
+{% endblock %}
+{% block content %}
+    <div class="sub-setting">
+        <h2>📁 Kategorier</h2>
+            <a href="{{url_persons}}"><h3>👥 Hantera personer</h3></a><br>
+            <a href="{{url_bookings}}"><h3>📅 Hantera bokningar</h3></a>
+        </form>
+    </div>
+{% endblock %}

@@ -3,3 +3,4 @@ archive/
 app/static/images
 config.py
 start_web.sh
+app/config/firebase-config.js

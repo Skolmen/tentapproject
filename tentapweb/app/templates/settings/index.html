@@ -1,3 +1,98 @@
+{% extends "components/base.html" %}
+{% block page_title %}Inställningar{% endblock %}
+{% block head %}
+    {{ super() }}
+    <!--<script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>-->
+    <script>
+        const VAPID_PUBLIC_KEY = "{{config['VAPID_PUBLIC_KEY']}}"
+    </script>
+    <!--<script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>-->
+    <!--<script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"></script>-->
+    <!--<script type="module" src="{{ url_for('static', filename='settings/scripts.js') }}"></script>-->
+    <!--<script type="module" src="{{ url_for('static', filename='settings/init-firebase.js') }}"></script>-->
+{% endblock %}
+{% block heading %}
+⚙ Inställningar
+{% endblock %}
+{% block content %}
+    <div class="mid">
+        <div class="sub-setting">
+            <h2>🔔 Notiser</h2>
+            <form id="notification-form">
+                <label for="notifications-on">På</label>
+                <input type="radio" name="notification-status" id="notifications-on" value="on">
+                <label for="notifications-off">Av</label>
+
+                <input type="radio" name="notification-status" id="notifications-off" value="off">
+
+                <br>
+
+                <label for="person">Person</label>
+                <select name="person" id="person">
+                    <option value="" selected disabled>Välj person</option>
+                    {% for person in persons %}
+                        <option value="{{ person.person_id }}">{{ person.name }}</option>
+                    {% endfor %}
+                </select>
+
+                <br>
+
+                <button type="submit">Spara</button>
+            </form>
+
+        </div>
+    </div>
+{% endblock %}
+{% block endOfBody %}
+<script type="module">
+    import { subscribeToNotifications, unSubscribeToNotifications } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
+
+    //Check notification status from local storage update it so if
+    function checkNotificationStatus() {
+        const notificationStatus = localStorage.getItem('notificationStatus');
+        if (notificationStatus === 'true') {
+            document.getElementById('notifications-on').checked = true;
+        } else {
+            document.getElementById('notifications-off').checked = true;
+            localStorage.setItem('notificationStatus', 'false');
+        }
+    }
+
+    checkNotificationStatus();
+
+    //Using the form subscribe to notifications if notifications-on is true and unsubscribe if notifications-off is true using requestPermission and deleteToken if and sending the person id to the backend
+    const form = document.getElementById('notification-form');
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const notificationStatus = formData.get('notification-status');
+        const person = formData.get('person');
+        if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'false') {
+            subscribeToNotifications(person);
+        } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'true') {
+            unSubscribeToNotifications();
+        } else if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'true') {
+            queueModal('ℹ Du är redan prenumererad på notiser', "info");
+        } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'false') {
+            queueModal('ℹ Du är redan avprenumererad på notiser', "info");
+        } else if (notificationStatus === 'on' && person === null) {
+            queueModal('Du måste välja en person', "error");
+        } 
+    });
+
+    if (localStorage.getItem('person_id')) {
+        document.getElementById('person').value = localStorage.getItem('person_id');
+    }
+
+
+</script>
+{% endblock %}
+
+
+<!--
+
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,12 +105,11 @@
         const VAPID_PUBLIC_KEY = "{{config['VAPID_PUBLIC_KEY']}}"
     </script>
     <script src="{{ url_for('static', filename='worker.js') }}"></script>
-    <script src="{{ url_for('static', filename='settings/scripts.js') }}"></script>
-    <script>requestNotificationPermission()</script>
+    <script type="module" src="{{ url_for('static', filename='settings/scripts.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='settings/init-firebase.js') }}"></script>
     <title>Bokningar</title>
 </head>
 <body>
-    <!-- Your HTML content -->
     <div class="top">
         <h1>⚙ Inställningar</h1>
     </div>
@@ -47,89 +141,25 @@
 
     <div id="t">f</div>
 
-    <button onclick="subscribeUser('/static/worker.js', VAPID_PUBLIC_KEY)">Subscribe</button>
-    <button onclick="seeSubscription('/static/worker.js')">logga subscription</button>
-    <button onclick="unSubscribe('/static/worker.js')">Unsub</button>
+    <button id="sub">Subscribe</button>
 
 
-    <!-- Register the service worker -->
-    <script type="text/javascript">
-		/*registerServiceWorker(
-			"/static/worker.js",
-			"{{config['VAPID_PUBLIC_KEY']}}",
-			"/api/push-subscriptions"
-		);*/
-	</script>
     <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js'
-        import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"
-
-        console.log('Requesting permission...');
-        document.getElementById('t').innerHTML = ('Requesting permission...');
+        import { requestPermission, messaging } from "{{ url_for('static', filename='settings/scripts.js') }}"
+        import { onMessage } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"
 
 
-        Notification.requestPermission().then(function(permission) { console.log('permiss', permission)});
+        const button = document.getElementById('sub');
+        button.addEventListener('click', () => {
+          requestPermission(); // Call the imported function
+        });
 
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyBfdkSqHTViEFscPcNF7Ra6LSW9CMgOEbM",
-            authDomain: "tenta-p-784b0.firebaseapp.com",
-            projectId: "tenta-p-784b0",
-            storageBucket: "tenta-p-784b0.appspot.com",
-            messagingSenderId: "265671814701",
-            appId: "1:265671814701:web:b68a92a3a1771a155592a4"
-        };
-        
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        
-        // Get registration token. Initially this makes a network call, once retrieved
-        // subsequent calls to getToken will return from cache.
-        const messaging = getMessaging();
-
-        console.log(messaging)
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/static/firebase-messaging-sw.js')
-              .then(function(registration) {
-                console.log('Registration successful, scope is:', registration.scope);
-                getToken(messaging, { serviceWorkerRegistration:registration, vapidKey: VAPID_PUBLIC_KEY })
-                .then((currentToken) => {
-                if (currentToken) {
-                    console.log(currentToken)
-                    //alert(currentToken)
-                    document.getElementById('t').innerHTML = (currentToken);
-
-                    // Send the token to your server and update the UI if necessary
-                    // ...
-                } else {    
-                    // Show permission request UI
-                    console.log('No registration token available. Request permission to generate one.');
-
-                    document.getElementById('t').innerHTML = ('No registration token available. Request permission to generate one.');
-                    // ...
-                }
-                }).catch((err) => {
-                console.log('An error occurred while retrieving token. ', err);
-                document.getElementById('t').innerHTML = ('An error occurred while retrieving token. ');
-
-                // ...
-                });
-              }).catch(function(err) {
-                console.log('Service worker registration failed, error:', err);
-                document.getElementById('t').innerHTML = ('Service worker registration failed, error:');
-
-              });
-          }
-          else {
-            document.getElementById('t').innerHTML = ('No sw 😭😭😭');
-          }
-
-          onMessage(messaging, (payload) => {
-            console.log('Message received. ', payload);
-            // ...
-          });
+        onMessage(messaging, (payload) => {
+        console.log('Message received. ', payload);
+        // ...
+        });
 
     </script>
 </body>
 </html>
+-->
