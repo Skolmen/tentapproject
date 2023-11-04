@@ -41,9 +41,6 @@
                 <button type="submit">Spara</button>
             </form>
 
-            <button id="sub">Dummy new token</button>
-            <button id="del">Dummy delete token</button>
-
         </div>
     </div>
 {% endblock %}
@@ -91,15 +88,6 @@
 
 
     detectNewToken();
-
-    document.getElementById('sub').addEventListener('click', () => {
-        newTokenForTesting();
-    });
-
-    document.getElementById('del').addEventListener('click', () => {
-        deleteTokenForTesting();
-    });
-
 
 </script>
 {% endblock %}
