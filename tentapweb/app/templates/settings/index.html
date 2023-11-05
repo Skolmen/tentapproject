@@ -11,6 +11,29 @@
     <!--<script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"></script>-->
     <!--<script type="module" src="{{ url_for('static', filename='settings/scripts.js') }}"></script>-->
     <!--<script type="module" src="{{ url_for('static', filename='settings/init-firebase.js') }}"></script>-->
+    <style>
+        button {
+            width: 80px;
+            height: 40px;
+            font-size: 18px;
+        }
+
+        input[type="radio"] {
+            width: 20px;
+            height: 20px;
+        }
+
+        label {
+            font-size: 18px;
+        }
+
+        select {
+            width: 130px;
+            height: 40px;
+            font-size: 18px;
+        }
+        
+    </style>
 {% endblock %}
 {% block heading %}
 ⚙ Inställningar
@@ -37,16 +60,39 @@
                 </select>
 
                 <br>
+                <br>
 
                 <button type="submit">Spara</button>
             </form>
-
+                <form id="notificaiton-settings">
+                <h3>🕐 Påminnelse av bokning</h3>
+                <input type="radio" name="reminder" id="reminder-on" value="on">
+                <label for="reminder-on">På</label>
+                <input type="radio" name="reminder" id="reminder-off" value="off">
+                <label for="reminder-off">Av</label>
+                <br>
+                <h3>🏠 Påminnelse av dagens salar</h3>
+                <input type="radio" name="room-reminder" id="room-reminder-on" value="on">	
+                <label for="room-reminder-on">På</label>
+                <input type="radio" name="room-reminder" id="room-reminder-off" value="off">
+                <label for="room-reminder-off">Av</label>
+                <br>
+                <h3>🏠 Påminnelse av morgondagens salar</h3>
+                <input type="radio" name="room-reminder-tomorrow" id="room-reminder-tomorrow-on" value="on">
+                <label for="room-reminder-tomorrow-on">På</label>
+                <input type="radio" name="room-reminder-tomorrow" id="room-reminder-tomorrow-off" value="off">
+                <label for="room-reminder-tomorrow-off">Av</label>
+                <br>
+                <br>
+                <button type="submit">Spara</button>
+            </form>
+            
         </div>
     </div>
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
-    import { subscribeToNotifications, unSubscribeToNotifications, detectNewToken } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { subscribeToNotifications, unSubscribeToNotifications, detectNewToken, updateSettingsForToken, setLocalStorageSettings } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
     import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
 
     //Check notification status from local storage update it so if
@@ -86,8 +132,68 @@
         document.getElementById('person').value = localStorage.getItem('person_id');
     }
 
-
     detectNewToken();
+
+    function checkNotificationSettings() {
+        const reminder = localStorage.getItem('reminder');
+        const roomReminder = localStorage.getItem('roomReminder');
+        const roomReminderTomorrow = localStorage.getItem('roomReminderTomorrow');
+        if (reminder === 'true') {
+            document.getElementById('reminder-on').checked = true;
+        } else {
+            document.getElementById('reminder-off').checked = true;
+            localStorage.setItem('reminder', 'false');
+        }
+        if (roomReminder === 'true') {
+            document.getElementById('room-reminder-on').checked = true;
+        } else {
+            document.getElementById('room-reminder-off').checked = true;
+            localStorage.setItem('roomReminder', 'false');
+        }
+        if (roomReminderTomorrow === 'true') {
+            document.getElementById('room-reminder-tomorrow-on').checked = true;
+        } else {
+            document.getElementById('room-reminder-tomorrow-off').checked = true;
+            localStorage.setItem('roomReminderTomorrow', 'false');
+        }
+    
+    }
+
+    checkNotificationSettings();
+
+    const notificationForm = document.getElementById('notificaiton-settings');
+    notificationForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData(notificationForm);
+        const reminder = formData.get('reminder');
+        const roomReminder = formData.get('room-reminder');
+        const roomReminderTomorrow = formData.get('room-reminder-tomorrow');
+        updateSettingsForToken().then(() => {
+            queueModal('✅ Inställningar sparade', "success");
+            if (reminder === 'on') {
+                localStorage.setItem('reminder', 'true');
+            } else {
+                localStorage.setItem('reminder', 'false');
+            }
+            if (roomReminder === 'on') {
+                localStorage.setItem('roomReminder', 'true');
+            } else {
+                localStorage.setItem('roomReminder', 'false');
+            }
+            if (roomReminderTomorrow === 'on') {
+                localStorage.setItem('roomReminderTomorrow', 'true');
+            } else {
+                localStorage.setItem('roomReminderTomorrow', 'false');
+            }
+        }).catch((error) => {
+            if (error === 'not-subscribed') {
+                setLocalStorageSettings(false);
+                queueModal('❌ Du är inte prenumererad på notiser', "error");
+            } else {
+                queueModal('❌ Något gick fel', "error");
+            }
+        })
+    });
 
 </script>
 {% endblock %}

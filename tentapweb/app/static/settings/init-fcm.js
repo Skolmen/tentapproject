@@ -1,7 +1,6 @@
-import { getMessaging, getToken, deleteToken, onMessage } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"
+import { getMessaging, getToken, deleteToken } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"
 import { app } from "/static/global/init-firebase.js"
 import { queueModal } from "/static/global/modal.js";
-
 
 
 // Retrieve Firebase Messaging object.
@@ -38,14 +37,13 @@ export function tokenHandler() {
  * @throws Will log an error to the console if unable to get permission, retrieve the token, or send the token to the server.
  */
 export function subscribeToNotifications(person_id) {
+    queueModal("⏳ Slår på aviseringar...", "info");
     Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
             console.log('Notification permission granted.');
             // Add the public key generated from the console here.
             tokenHandler().then((currentToken) => {
                 if (currentToken) {
-                    // Send the token to your server and update the UI if necessary
-                    // ...
                     console.log(currentToken);
                     sendTokenToServer(currentToken, person_id).then(() => {
                         queueModal("🔔 Aviseringar påslagna!", "success");
@@ -73,6 +71,138 @@ export function subscribeToNotifications(person_id) {
     });
 }
 
+/**
+ * Detects if the token has changed and updates it on the server if it has.
+ * 
+ * This function first checks if the notification status is set to false in local storage.
+ * If it is, the function returns immediately. If not, it retrieves the stored token from local storage.
+ * It then gets the current token by calling the `tokenHandler` function.
+ * If the current token is different from the stored token, it calls the `updateTokenOnServer` function
+ * to update the token on the server and then updates the token in local storage.
+ * If the current token is the same as the stored token, it logs "Same token" to the console.
+ *
+ * @function detectNewToken
+ * @throws Will log an error to the console if unable to update the token on the server.
+ */
+export function detectNewToken() {
+    return new Promise((resolve, reject) => {
+        if (localStorage.getItem("notificationStatus") === "false") {
+            resolve();
+            return;
+        }
+        let storedToken = localStorage.getItem("token");
+        tokenHandler().then((currentToken) => {
+            console.log("Current token: " + currentToken + "\nStored token: " + storedToken);
+            if (currentToken !== storedToken) {
+                updateTokenOnServer(storedToken, currentToken).then(() => {
+                    localStorage.setItem("token", currentToken);
+                    console.log('Token updated on server.');
+                    resolve();
+                }).catch((err) => {
+                    console.log('Unable to update token on server. ', err);
+                    reject(err);
+                });
+            }
+            else {
+                console.log("Same token");
+                resolve();
+            }
+        });
+    });
+}
+
+/**
+ * Unsubscribes from notifications.
+ * 
+ * This function first retrieves the current token by calling the `tokenHandler` function.
+ * It then calls the `deleteToken` function to delete the token from the messaging service.
+ * If the token is successfully deleted, it calls the `removeTokenFromServer` function to remove the token from the server.
+ * If the token is successfully removed from the server, it displays a success message, sets the "notificationStatus" in local storage to false,
+ * and removes the "token" and "person_id" from local storage.
+ * If any of these operations fail, it logs an error to the console.
+ *
+ * @function unSubscribeToNotifications
+ * @throws Will log an error to the console if unable to get the token, delete the token, or remove the token from the server.
+ */
+export function unSubscribeToNotifications() {
+    queueModal("⏳ Stänger av aviseringar...", "info")
+    detectNewToken().then(() => {
+        tokenHandler().then((token) => {
+            deleteToken(messaging, token).then(() => {
+                console.log('Token deleted.');
+                // Remove token from server
+                removeTokenFromServer(token).then(() => {
+                    queueModal("🔕 Aviseringar avslagna!", "success");
+                    localStorage.setItem("notificationStatus", false);
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("person_id");
+                    setLocalStorageSettings(false);
+                    console.log('Token removed from server.');
+                }).catch((err) => {
+                    console.log('Unable to remove token from server. ', err);
+                });
+            }).catch((err) => {
+                console.log('Unable to delete token. ', err);
+            });
+        }).catch((err) => {
+            console.log('Unable to get token. ', err);
+        });
+    });
+}
+
+export function updateSettingsForToken() {
+    return new Promise((resolve, reject) => {
+        if (localStorage.getItem("notificationStatus") === "false") {
+            reject("not-subscribed");
+            return;
+        }
+        tokenHandler().then((currentToken) => {
+            const form = document.getElementById("notificaiton-settings");
+            const formData = new FormData(form);
+            const settings = {};
+            for (const pair of formData.entries()) {
+                settings[pair[0]] = pair[1];
+            }
+            console.log(settings);
+            updateSettingsForTokenOnServer(currentToken, settings).then(() => {
+                resolve();
+            }).catch((err) => {
+                reject(err);
+            });
+        }
+        );
+    }
+    );
+}
+
+export function setLocalStorageSettings(bool) {
+    localStorage.setItem("reminder", bool);
+    localStorage.setItem("roomReminder", bool);
+    localStorage.setItem("roomReminderTomorrow", bool);
+}
+
+/**
+ * Updates the token on the server.
+ *
+ * @async
+ * @function updateTokenOnServer
+ * @param {string} old_token - The old token to be replaced.
+ * @param {string} new_token - The new token to replace the old one.
+ * @throws Will throw an error if the response from the server is not ok.
+ */
+async function updateTokenOnServer(old_token, new_token) {
+    const response = await fetch('/api/updateToken', {
+        method: 'POSTs',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ old_token, new_token }),
+    });
+
+    if (!response.ok) {
+        throw new Error('Failed to update token on server');
+    }
+}
 
 /**
  * Sends the token and person_id to the server.
@@ -104,7 +234,8 @@ async function sendTokenToServer(token, person_id) {
  * @function removeTokenFromServer
  * @param {string} token - The token to be removed.
  * @throws Will throw an error if the response from the server is not ok.
- */async function removeTokenFromServer(token) {
+ */
+async function removeTokenFromServer(token) {
     const response = await fetch('/api/unsubscribe', {
         method: 'POST',
         headers: {
@@ -118,94 +249,16 @@ async function sendTokenToServer(token, person_id) {
     }
 }
 
-/**
- * Unsubscribes from notifications.
- * 
- * This function first retrieves the current token by calling the `tokenHandler` function.
- * It then calls the `deleteToken` function to delete the token from the messaging service.
- * If the token is successfully deleted, it calls the `removeTokenFromServer` function to remove the token from the server.
- * If the token is successfully removed from the server, it displays a success message, sets the "notificationStatus" in local storage to false,
- * and removes the "token" and "person_id" from local storage.
- * If any of these operations fail, it logs an error to the console.
- *
- * @function unSubscribeToNotifications
- * @throws Will log an error to the console if unable to get the token, delete the token, or remove the token from the server.
- */
-export function unSubscribeToNotifications() {
-    tokenHandler().then((token) => {
-        deleteToken(messaging).then(() => {
-            console.log('Token deleted.');
-            // Remove token from server
-            removeTokenFromServer(token).then(() => {
-                queueModal("🔕 Aviseringar avslagna!", "success");
-                localStorage.setItem("notificationStatus", false);
-                localStorage.removeItem("token");
-                localStorage.removeItem("person_id");
-                console.log('Token removed from server.');
-            }).catch((err) => {
-                console.log('Unable to remove token from server. ', err);
-            });
-        }).catch((err) => {
-            console.log('Unable to delete token. ', err);
-        });
-    }).catch((err) => {
-        console.log('Unable to get token. ', err);
-    });
-}
-
-/**
- * Detects if the token has changed and updates it on the server if it has.
- * 
- * This function first checks if the notification status is set to false in local storage.
- * If it is, the function returns immediately. If not, it retrieves the stored token from local storage.
- * It then gets the current token by calling the `tokenHandler` function.
- * If the current token is different from the stored token, it calls the `updateTokenOnServer` function
- * to update the token on the server and then updates the token in local storage.
- * If the current token is the same as the stored token, it logs "Same token" to the console.
- *
- * @function detectNewToken
- * @throws Will log an error to the console if unable to update the token on the server.
- */
-export function detectNewToken() {
-    if (localStorage.getItem("notificationStatus") === "false") {
-        return;
-    }
-    let storedToken = localStorage.getItem("token");
-    tokenHandler().then((currentToken) => {
-        console.log("Current token: " + currentToken + "\nStored token: " + storedToken);
-        if (currentToken !== storedToken) {
-            updateTokenOnServer(storedToken, currentToken).then(() => {
-                localStorage.setItem("token", currentToken);
-                console.log('Token updated on server.');
-            }).catch((err) => {
-                console.log('Unable to update token on server. ', err);
-            });
-        }
-        else {
-            console.log("Same token");
-        }
-    });
-}
-
-/**
- * Updates the token on the server.
- *
- * @async
- * @function updateTokenOnServer
- * @param {string} old_token - The old token to be replaced.
- * @param {string} new_token - The new token to replace the old one.
- * @throws Will throw an error if the response from the server is not ok.
- */
-async function updateTokenOnServer(old_token, new_token) {
-    const response = await fetch('/api/updateToken', {
-        method: 'POSTs',
+async function updateSettingsForTokenOnServer(token, settings) {
+    const response = await fetch('/api/updateNotificationSettings', {
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ old_token, new_token }),
+        body: JSON.stringify({ token, settings }),
     });
 
     if (!response.ok) {
-        throw new Error('Failed to update token on server');
+        throw new Error('Failed to update settings for token on server');
     }
 }

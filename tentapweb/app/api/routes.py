@@ -11,7 +11,6 @@ def send_token_to_server():
         json_data = request.get_json()
         
         token = json_data['token']
-        print(token)
         person_id = json_data['person_id']
         
         response = requests.post(current_app.config['TP_API'] + "messaging/token", json={
@@ -72,9 +71,6 @@ def update_token():
             'X-API-Key': current_app.config['TP_API_KEY']
         })
         
-        print(response.status_code)
-        print(current_app.config['TP_API'] + "messaging/token")
-        
         if response.status_code == 200:
             return jsonify({
                 "status": "updated",
@@ -103,4 +99,27 @@ def get_persons():
     except requests.exceptions.RequestException as e:
         return f'Request error: {str(e)}', 500
     
+@bp.route("/updateNotificationSettings", methods=['POST'])
+def update_notification_settings():
+    try:
+        json_data = request.get_json()
+        token = json_data['token']
+        settings = json_data['settings']
+        
+        response = requests.put(current_app.config['TP_API'] + "messaging/settings", json={
+            'token': token,
+            'settings': settings
+        }, headers={
+            'X-API-Key': current_app.config['TP_API_KEY']
+        })
+        
+        if response.status_code == 200:
+            return jsonify({
+                "status": "updated",
+            }), 200
+        else:
+            return f'Request failed with status code: {response.status_code}', response.status_code
+        
+    except requests.exceptions.RequestException as e:
+        return f'Request error: {str(e)}', 500    
 

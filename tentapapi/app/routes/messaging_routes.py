@@ -4,6 +4,7 @@ from app.models.fcm_token import FCMToken
 from app.auth import api_key_required
 from firebase_admin import messaging
 from app.extensions import cred, default_app
+from app.models.token_settings import TokenSettings
 
 
 # Create a blueprint for the "messaging" functionality
@@ -94,6 +95,62 @@ def update_token():
         # Log the error for debugging purposes
         print(f"Error: {str(e)}")
         return "Internal Server Error", 500
+    
+@bp.route('/settings', methods=['PUT'])
+@api_key_required
+def update_settings():
+    try:
+        data = request.get_json()
+        
+        required_fields = ['token', 'settings']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return f"Missing fields: {', '.join(missing_fields)}", 400
+        
+        #Check if each setting is valid
+        valid_settings = ['reminder', 'room-reminder', 'room-reminder-tomorrow']
+        invalid_settings = [setting for setting in data['settings'] if setting not in valid_settings]
+        if invalid_settings:
+            return f"Invalid settings: {', '.join(invalid_settings)}", 400
+        
+        # Check if each setting is on or off
+        for setting in data['settings']:
+            if data['settings'][setting] not in ['on', 'off']:
+                return f"Invalid value for setting '{setting}': {data['settings'][setting]}", 400
+            
+        # Convert on or off to 1 or 0
+        for setting in data['settings']:
+            data['settings'][setting] = 1 if data['settings'][setting] == 'on' else 0
+        
+        token = FCMToken.query.filter_by(token=data['token']).first()
+        
+        if not token:
+            return "Token not found", 404
+        
+        # Try to get an existing TokenSettings instance
+        token_settings = TokenSettings.query.filter_by(token=token.token).first()
+        
+        # If it doesn't exist, create a new one
+        if not token_settings:
+            token_settings = TokenSettings(token=token.token)
+            db.session.add(token_settings)  # Add it to the session
+        
+        print(data['settings'])
+        
+        # Update the settings
+        token_settings.booking_reminder = data['settings']['reminder']
+        token_settings.todays_rooms_reminder = data['settings']['room-reminder']
+        token_settings.tomorrow_rooms_reminder = data['settings']['room-reminder-tomorrow']
+        
+        
+        db.session.commit()  # Commit the session to save the changes
+        
+        return token_settings.to_json(), 200  # OK
+    except Exception as e:
+        # Log the error for debugging purposes
+        print(f"Error: {str(e)}")
+        return "Internal Server Error", 500
+
     
 #Notify all users with a token in the database
 @bp.route('/notify', methods=['POST'])
