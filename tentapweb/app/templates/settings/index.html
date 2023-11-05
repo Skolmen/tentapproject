@@ -92,7 +92,7 @@
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
-    import { subscribeToNotifications, unSubscribeToNotifications, detectNewToken, updateSettingsForToken, setLocalStorageSettings } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { callSubscribeToNotifications, callUnSubscribeToNotifications, detectNewToken, updateSettingsForToken, setLocalStorageSettings } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
     import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
 
     //Check notification status from local storage update it so if
@@ -116,9 +116,9 @@
         const notificationStatus = formData.get('notification-status');
         const person = formData.get('person');
         if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'false') {
-            subscribeToNotifications(person);
+            callSubscribeToNotifications(person);
         } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'true') {
-            unSubscribeToNotifications();
+            callUnSubscribeToNotifications();
         } else if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'true') {
             queueModal('ℹ Du är redan prenumererad på notiser', "info");
         } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'false') {

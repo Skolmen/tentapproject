@@ -20,55 +20,79 @@ export function tokenHandler() {
 }
 
 /**
- * Subscribes to notifications for a specific person.
- *
- * This function first requests notification permission from the user.
+ * This function subscribes to notifications for a specific person.
+ * It first requests notification permission from the user.
  * If permission is granted, it retrieves the current token by calling the `tokenHandler` function.
  * If a token is retrieved, it sends the token and the person_id to the server by calling the `sendTokenToServer` function.
- * If the token is successfully sent, it displays a success message, sets the "notificationStatus", "person_id", and "token" in local storage,
- * and logs "Token sent to server." to the console.
- * If unable to send the token, it logs an error to the console.
- * If no token is retrieved, it logs "No registration token available. Request permission to generate one." to the console.
- * If unable to retrieve a token, it displays an error message and logs an error to the console.
- * If permission is not granted, it logs "Unable to get permission to notify." to the console.
- *
- * @function subscribeToNotifications
+ * It also updates the local storage settings.
  * @param {string} person_id - The ID of the person to subscribe to notifications for.
- * @throws Will log an error to the console if unable to get permission, retrieve the token, or send the token to the server.
+ * @returns {Promise<Object>} A promise that resolves to an object with a status property (boolean) and an optional errorCode property (string).
  */
-export function subscribeToNotifications(person_id) {
-    queueModal("⏳ Slår på aviseringar...", "info");
-    Notification.requestPermission().then((permission) => {
+export async function subscribeToNotifications(person_id) {
+    try {
+        const permission = await Notification.requestPermission();
         if (permission === 'granted') {
             console.log('Notification permission granted.');
-            // Add the public key generated from the console here.
-            tokenHandler().then((currentToken) => {
-                if (currentToken) {
-                    console.log(currentToken);
-                    sendTokenToServer(currentToken, person_id).then(() => {
-                        queueModal("🔔 Aviseringar påslagna!", "success");
-                        localStorage.setItem("notificationStatus", true);
-                        localStorage.setItem("person_id", person_id);
-                        localStorage.setItem("token", currentToken);
-                        console.log('Token sent to server.');
-                    }
-                    ).catch((err) => {
-                        console.log('Unable to send token to server. ', err);
-                    });
-                } else {
-                    // Show permission request UI
-                    console.log('No registration token available. Request permission to generate one.');
-                    // ...
-                }
-            }).catch((err) => {
-                queueModal("🚫 Ett fel inträffade! Försök igen.", "error");
-                console.log('An error occurred while retrieving token. ', err);
-                // ...
-            });
+            const currentToken = await tokenHandler();
+            if (currentToken) {
+                console.log(currentToken);
+                await sendTokenToServer(currentToken, person_id);
+                localStorage.setItem("notificationStatus", true);
+                localStorage.setItem("person_id", person_id);
+                localStorage.setItem("token", currentToken);
+                // If everything is successful, return an object with status: true
+                return { status: true };
+            } else {
+                console.log('No registration token available. Request permission to generate one.');
+                // If no token is available, return an object with status: false and errorCode: 'noTokenAvailable'
+                return { status: false, errorCode: 'noTokenAvailable' };
+            }
         } else {
             console.log('Unable to get permission to notify.');
+            // If unable to get permission, return an object with status: false and errorCode: 'unableToGetPermission'
+            return { status: false, errorCode: 'unableToGetPermission' };
         }
-    });
+    } catch (err) {
+        // If an error occurs, return an object with status: false and errorCode: 'errorSubscribingToNotifications'
+        return { status: false, errorCode: 'errorSubscribingToNotifications' };
+    }
+}
+
+/**
+ * This function calls subscribeToNotifications and handles all the output.
+ * It displays a loading modal, then calls subscribeToNotifications.
+ * If the operation is successful, it displays a success modal and logs a success message.
+ * If the operation fails, it displays an error modal and logs an error message.
+ * @param {string} person_id - The ID of the person to subscribe to notifications for.
+ */
+export async function callSubscribeToNotifications(person_id) {
+    try {
+        queueModal("⏳ Slår på aviseringar...", "info");
+        const result = await subscribeToNotifications(person_id);
+        if (result.status) {
+            queueModal("🔔 Aviseringar påslagna!", "success");
+            console.log('Token sent to server.');
+        } else {
+            let errorMessage;
+            switch (result.errorCode) {
+                case 'noTokenAvailable':
+                    errorMessage = 'Kunde inte generara en token.';
+                    break;
+                case 'unableToGetPermission':
+                    errorMessage = 'Du måste tillåta aviseringer.';
+                    break;
+                case 'errorSubscribingToNotifications':
+                    errorMessage = 'Ett fel uppstod vid prenumeration på aviseringar.';
+                    break;
+                default:
+                    errorMessage = 'Ett okänt fel uppstod.';
+            }
+            queueModal("🚫 " + errorMessage, "error");
+            console.log(errorMessage);
+        }
+    } catch (err) {
+        console.log('Error: ', err);
+    }
 }
 
 /**
@@ -112,36 +136,47 @@ export function detectNewToken() {
 }
 
 /**
- * Unsubscribes from notifications.
- * 
- * This function first retrieves the current token by calling the `tokenHandler` function.
- * It then calls the `deleteToken` function to delete the token from the messaging service.
- * If the token is successfully deleted, it calls the `removeTokenFromServer` function to remove the token from the server.
- * If the token is successfully removed from the server, it displays a success message, sets the "notificationStatus" in local storage to false,
- * and removes the "token" and "person_id" from local storage.
- * If any of these operations fail, it logs an error to the console.
- *
- * @function unSubscribeToNotifications
- * @throws Will log an error to the console if unable to get the token, delete the token, or remove the token from the server.
+ * This function unsubscribes from notifications.
+ * It first removes the token from the server, then deletes the token on the client.
+ * It also updates the local storage settings.
+ * @returns {Promise<boolean>} A promise that resolves to a boolean value indicating the success or failure of the operation.
  */
 export async function unSubscribeToNotifications() {
     try {
-        queueModal("⏳ Stänger av aviseringar...", "info");
         await detectNewToken();
         const token = await tokenHandler();
         // Remove token from server first
         await removeTokenFromServer(token);
-        console.log('Token removed from server.');
         // Then delete token on the client
         await deleteToken(messaging, token);
-        console.log('Token deleted.');
-        queueModal("🔕 Aviseringar avslagna!", "success");
         localStorage.setItem("notificationStatus", false);
         localStorage.removeItem("token");
         localStorage.removeItem("person_id");
         setLocalStorageSettings(false);
+        return true;
     } catch (err) {
-        queueModal("🚫 Ett fel inträffade! Försök igen.", "error")
+        return false;
+    }
+}
+
+/**
+ * This function calls unSubscribeToNotifications and handles all the output.
+ * It displays a loading modal, then calls unSubscribeToNotifications.
+ * If the operation is successful, it displays a success modal and logs a success message.
+ * If the operation fails, it displays an error modal and logs an error message.
+ */
+export async function callUnSubscribeToNotifications() {
+    try {
+        queueModal("⏳ Stänger av aviseringar...", "info");
+        const result = await unSubscribeToNotifications();
+        if (result) {
+            queueModal("🔕 Aviseringar avslagna!", "success");
+            console.log('Token deleted and removed from server.');
+        } else {
+            queueModal("🚫 Ett fel inträffade! Försök igen.", "error");
+            console.log('Error occurred while unsubscribing to notifications.');
+        }
+    } catch (err) {
         console.log('Error: ', err);
     }
 }
