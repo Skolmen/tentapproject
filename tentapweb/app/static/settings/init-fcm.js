@@ -124,30 +124,26 @@ export function detectNewToken() {
  * @function unSubscribeToNotifications
  * @throws Will log an error to the console if unable to get the token, delete the token, or remove the token from the server.
  */
-export function unSubscribeToNotifications() {
-    queueModal("⏳ Stänger av aviseringar...", "info")
-    detectNewToken().then(() => {
-        tokenHandler().then((token) => {
-            deleteToken(messaging, token).then(() => {
-                console.log('Token deleted.');
-                // Remove token from server
-                removeTokenFromServer(token).then(() => {
-                    queueModal("🔕 Aviseringar avslagna!", "success");
-                    localStorage.setItem("notificationStatus", false);
-                    localStorage.removeItem("token");
-                    localStorage.removeItem("person_id");
-                    setLocalStorageSettings(false);
-                    console.log('Token removed from server.');
-                }).catch((err) => {
-                    console.log('Unable to remove token from server. ', err);
-                });
-            }).catch((err) => {
-                console.log('Unable to delete token. ', err);
-            });
-        }).catch((err) => {
-            console.log('Unable to get token. ', err);
-        });
-    });
+export async function unSubscribeToNotifications() {
+    try {
+        queueModal("⏳ Stänger av aviseringar...", "info");
+        await detectNewToken();
+        const token = await tokenHandler();
+        // Remove token from server first
+        await removeTokenFromServer(token);
+        console.log('Token removed from server.');
+        // Then delete token on the client
+        await deleteToken(messaging, token);
+        console.log('Token deleted.');
+        queueModal("🔕 Aviseringar avslagna!", "success");
+        localStorage.setItem("notificationStatus", false);
+        localStorage.removeItem("token");
+        localStorage.removeItem("person_id");
+        setLocalStorageSettings(false);
+    } catch (err) {
+        queueModal("🚫 Ett fel inträffade! Försök igen.", "error")
+        console.log('Error: ', err);
+    }
 }
 
 export function updateSettingsForToken() {
@@ -192,7 +188,7 @@ export function setLocalStorageSettings(bool) {
  */
 async function updateTokenOnServer(old_token, new_token) {
     const response = await fetch('/api/updateToken', {
-        method: 'POSTs',
+        method: 'POST',
         headers: {
             'Content-Type': 'application/json',
         },
