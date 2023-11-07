@@ -47,7 +47,7 @@
                 <input type="radio" name="notification-status" id="notifications-on" value="on">
                 <label for="notifications-off">Av</label>
 
-                <input type="radio" name="notification-status" id="notifications-off" value="off">
+                <input type="radio" name="notification-status" id="notifications-off" value="off" checked>
 
                 <br>
 
@@ -68,19 +68,19 @@
                 <h3>🕐 Påminnelse av bokning</h3>
                 <input type="radio" name="reminder" id="reminder-on" value="on">
                 <label for="reminder-on">På</label>
-                <input type="radio" name="reminder" id="reminder-off" value="off">
+                <input type="radio" name="reminder" id="reminder-off" value="off" checked>
                 <label for="reminder-off">Av</label>
                 <br>
                 <h3>🏠 Påminnelse av dagens salar</h3>
                 <input type="radio" name="room-reminder" id="room-reminder-on" value="on">	
                 <label for="room-reminder-on">På</label>
-                <input type="radio" name="room-reminder" id="room-reminder-off" value="off">
+                <input type="radio" name="room-reminder" id="room-reminder-off" value="off" checked>
                 <label for="room-reminder-off">Av</label>
                 <br>
                 <h3>🏠 Påminnelse av morgondagens salar</h3>
                 <input type="radio" name="room-reminder-tomorrow" id="room-reminder-tomorrow-on" value="on">
                 <label for="room-reminder-tomorrow-on">På</label>
-                <input type="radio" name="room-reminder-tomorrow" id="room-reminder-tomorrow-off" value="off">
+                <input type="radio" name="room-reminder-tomorrow" id="room-reminder-tomorrow-off" value="off" checked>
                 <label for="room-reminder-tomorrow-off">Av</label>
                 <br>
                 <br>
@@ -92,7 +92,7 @@
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
-    import { callSubscribeToNotifications, callUnSubscribeToNotifications, detectNewToken, updateSettingsForToken, setLocalStorageSettings } from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { callSubscribeToNotifications, callUnSubscribeToNotifications, detectNewToken, updateSettingsForToken, getNotificationSettings} from "{{ url_for('static', filename='settings/init-fcm.js') }}"
     import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
 
     //Check notification status from local storage update it so if
@@ -102,11 +102,41 @@
             document.getElementById('notifications-on').checked = true;
         } else {
             document.getElementById('notifications-off').checked = true;
-            localStorage.setItem('notificationStatus', 'false');
         }
     }
 
     checkNotificationStatus();
+
+    // Check notification settings from local storage and update the radio buttons
+    function checkNotificationSettings() {
+        getNotificationSettings().then((settings) => {
+            if (settings.reminderToBook === 'on') {
+                document.getElementById('reminder-on').checked = true;
+            } else {
+                document.getElementById('reminder-off').checked = true;
+            }
+            if (settings.roomReminderToday === 'on') {
+                document.getElementById('room-reminder-on').checked = true;
+            } else {
+                document.getElementById('room-reminder-off').checked = true;
+            }
+            if (settings.roomReminderTomorrow === 'on') {
+                document.getElementById('room-reminder-tomorrow-on').checked = true;
+            } else {
+                document.getElementById('room-reminder-tomorrow-off').checked = true;
+            }
+        }).catch((error) => {
+            if (error === 'not-subscribed') {
+                queueModal('❌ Du är inte prenumererad på notiser', "error");
+            } else {
+                queueModal('❌ Något gick fel', "error");
+            }
+            resetRadioButtons();
+        })
+    }
+    
+
+    checkNotificationSettings();
 
     //Using the form subscribe to notifications if notifications-on is true and unsubscribe if notifications-off is true using requestPermission and deleteToken if and sending the person id to the backend
     const form = document.getElementById('notification-form');
@@ -118,7 +148,9 @@
         if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'false') {
             callSubscribeToNotifications(person);
         } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'true') {
-            callUnSubscribeToNotifications();
+            callUnSubscribeToNotifications().then(() => {
+                checkNotificationSettings();
+            });
         } else if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'true') {
             queueModal('ℹ Du är redan prenumererad på notiser', "info");
         } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'false') {
@@ -134,33 +166,6 @@
 
     detectNewToken();
 
-    function checkNotificationSettings() {
-        const reminder = localStorage.getItem('reminder');
-        const roomReminder = localStorage.getItem('roomReminder');
-        const roomReminderTomorrow = localStorage.getItem('roomReminderTomorrow');
-        if (reminder === 'true') {
-            document.getElementById('reminder-on').checked = true;
-        } else {
-            document.getElementById('reminder-off').checked = true;
-            localStorage.setItem('reminder', 'false');
-        }
-        if (roomReminder === 'true') {
-            document.getElementById('room-reminder-on').checked = true;
-        } else {
-            document.getElementById('room-reminder-off').checked = true;
-            localStorage.setItem('roomReminder', 'false');
-        }
-        if (roomReminderTomorrow === 'true') {
-            document.getElementById('room-reminder-tomorrow-on').checked = true;
-        } else {
-            document.getElementById('room-reminder-tomorrow-off').checked = true;
-            localStorage.setItem('roomReminderTomorrow', 'false');
-        }
-    
-    }
-
-    checkNotificationSettings();
-
     const notificationForm = document.getElementById('notificaiton-settings');
     notificationForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -168,106 +173,30 @@
         const reminder = formData.get('reminder');
         const roomReminder = formData.get('room-reminder');
         const roomReminderTomorrow = formData.get('room-reminder-tomorrow');
-        updateSettingsForToken().then(() => {
+        // create a json object with the settings
+        const currentSettings = {
+            reminderToBook: reminder,
+            roomReminderToday: roomReminder,
+            roomReminderTomorrow: roomReminderTomorrow
+        }
+
+        updateSettingsForToken(currentSettings).then(() => {
             queueModal('✅ Inställningar sparade', "success");
-            if (reminder === 'on') {
-                localStorage.setItem('reminder', 'true');
-            } else {
-                localStorage.setItem('reminder', 'false');
-            }
-            if (roomReminder === 'on') {
-                localStorage.setItem('roomReminder', 'true');
-            } else {
-                localStorage.setItem('roomReminder', 'false');
-            }
-            if (roomReminderTomorrow === 'on') {
-                localStorage.setItem('roomReminderTomorrow', 'true');
-            } else {
-                localStorage.setItem('roomReminderTomorrow', 'false');
-            }
+
         }).catch((error) => {
             if (error === 'not-subscribed') {
-                setLocalStorageSettings(false);
                 queueModal('❌ Du är inte prenumererad på notiser', "error");
             } else {
                 queueModal('❌ Något gick fel', "error");
             }
+            resetRadioButtons();
         })
     });
 
+    // Reset the radio buttons to the previous state
+    function resetRadioButtons() {
+        checkNotificationSettings();
+    }
+
 </script>
 {% endblock %}
-
-
-<!--
-
-<!DOCTYPE html>
-<html>
-<head>
-    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='settings/stylesheet.css') }}">
-    <script>
-        const VAPID_PUBLIC_KEY = "{{config['VAPID_PUBLIC_KEY']}}"
-    </script>
-    <script src="{{ url_for('static', filename='worker.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='settings/scripts.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='settings/init-firebase.js') }}"></script>
-    <title>Bokningar</title>
-</head>
-<body>
-    <div class="top">
-        <h1>⚙ Inställningar</h1>
-    </div>
-    <div class="mid">
-        <div class="sub-setting">
-            <h2>🔔 Notiser</h2>
-            <form id="notification-form">
-                <label for="notifications-on">På</label>
-                <input type="radio" name="notification-status" id="notifications-on" value="on">
-                <label for="notifications-off">Av</label>
-                <input type="radio" name="notification-status" id="notifications-off" value="off">
-
-                <br>
-
-                <label for="person">Person</label>
-                <select name="person" id="person">
-                    <option value="1">Test</option>
-                    <option value="1">Te</option>
-                    <option value="1">Tst</option>
-                    <option value="1">Tet</option>
-                </select>
-
-                <br>
-
-                <button type="submit">Spara</button>
-            </form>
-        </div>
-    </div>
-
-    <div id="t">f</div>
-
-    <button id="sub">Subscribe</button>
-
-
-    <script type="module">
-        import { requestPermission, messaging } from "{{ url_for('static', filename='settings/scripts.js') }}"
-        import { onMessage } from "https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"
-
-
-        const button = document.getElementById('sub');
-        button.addEventListener('click', () => {
-          requestPermission(); // Call the imported function
-        });
-
-        onMessage(messaging, (payload) => {
-        console.log('Message received. ', payload);
-        // ...
-        });
-
-    </script>
-</body>
-</html>
--->

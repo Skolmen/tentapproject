@@ -108,7 +108,7 @@ def update_settings():
             return f"Missing fields: {', '.join(missing_fields)}", 400
         
         #Check if each setting is valid
-        valid_settings = ['reminder', 'room-reminder', 'room-reminder-tomorrow']
+        valid_settings = ['reminderToBook', 'roomReminderToday', 'roomReminderTomorrow']
         invalid_settings = [setting for setting in data['settings'] if setting not in valid_settings]
         if invalid_settings:
             return f"Invalid settings: {', '.join(invalid_settings)}", 400
@@ -135,12 +135,10 @@ def update_settings():
             token_settings = TokenSettings(token=token.token)
             db.session.add(token_settings)  # Add it to the session
         
-        print(data['settings'])
-        
         # Update the settings
-        token_settings.booking_reminder = data['settings']['reminder']
-        token_settings.todays_rooms_reminder = data['settings']['room-reminder']
-        token_settings.tomorrow_rooms_reminder = data['settings']['room-reminder-tomorrow']
+        token_settings.booking_reminder = data['settings']['reminderToBook']
+        token_settings.todays_rooms_reminder = data['settings']['roomReminderToday']
+        token_settings.tomorrow_rooms_reminder = data['settings']['roomReminderTomorrow']
         
         
         db.session.commit()  # Commit the session to save the changes

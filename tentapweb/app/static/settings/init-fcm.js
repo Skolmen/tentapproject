@@ -6,6 +6,11 @@ import { queueModal } from "/static/global/modal.js";
 // Retrieve Firebase Messaging object.
 export const messaging = getMessaging(app);
 
+//Init notificationStatus in local storage
+if (localStorage.getItem("notificationStatus") === null) {
+    localStorage.setItem("notificationStatus", false);
+}
+
 /**
  * Retrieves the current token.
  *
@@ -28,7 +33,7 @@ export function tokenHandler() {
  * @param {string} person_id - The ID of the person to subscribe to notifications for.
  * @returns {Promise<Object>} A promise that resolves to an object with a status property (boolean) and an optional errorCode property (string).
  */
-export async function subscribeToNotifications(person_id) {
+async function subscribeToNotifications(person_id) {
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
@@ -40,6 +45,7 @@ export async function subscribeToNotifications(person_id) {
                 localStorage.setItem("notificationStatus", true);
                 localStorage.setItem("person_id", person_id);
                 localStorage.setItem("token", currentToken);
+                initNotificationSettings();
                 // If everything is successful, return an object with status: true
                 return { status: true };
             } else {
@@ -65,35 +71,114 @@ export async function subscribeToNotifications(person_id) {
  * If the operation fails, it displays an error modal and logs an error message.
  * @param {string} person_id - The ID of the person to subscribe to notifications for.
  */
-export async function callSubscribeToNotifications(person_id) {
-    try {
-        queueModal("⏳ Slår på aviseringar...", "info");
-        const result = await subscribeToNotifications(person_id);
-        if (result.status) {
-            queueModal("🔔 Aviseringar påslagna!", "success");
-            console.log('Token sent to server.');
-        } else {
-            let errorMessage;
-            switch (result.errorCode) {
-                case 'noTokenAvailable':
-                    errorMessage = 'Kunde inte generara en token.';
-                    break;
-                case 'unableToGetPermission':
-                    errorMessage = 'Du måste tillåta aviseringer.';
-                    break;
-                case 'errorSubscribingToNotifications':
-                    errorMessage = 'Ett fel uppstod vid prenumeration på aviseringar.';
-                    break;
-                default:
-                    errorMessage = 'Ett okänt fel uppstod.';
-            }
-            queueModal("🚫 " + errorMessage, "error");
-            console.log(errorMessage);
+export const callSubscribeToNotifications = (() => {
+    let isSubscribing = false;
+
+    return async function(person_id) {
+        if (isSubscribing) {
+            return;
         }
+
+        isSubscribing = true;
+
+        try {
+            queueModal("⏳ Slår på aviseringar...", "info");
+            const result = await subscribeToNotifications(person_id);
+            if (result.status) {
+                queueModal("🔔 Aviseringar påslagna!", "success");
+                console.log('Token sent to server.');
+            } else {
+                let errorMessage;
+                switch (result.errorCode) {
+                    case 'noTokenAvailable':
+                        errorMessage = 'Kunde inte generara en token.';
+                        break;
+                    case 'unableToGetPermission':
+                        errorMessage = 'Du måste tillåta aviseringer.';
+                        break;
+                    case 'errorSubscribingToNotifications':
+                        errorMessage = 'Ett fel uppstod vid prenumeration på aviseringar.';
+                        break;
+                    default:
+                        errorMessage = 'Ett okänt fel uppstod.';
+                }
+                queueModal("🚫 " + errorMessage, "error");
+                console.log(errorMessage);
+            }
+        } catch (err) {
+            console.log('Error: ', err);
+        } finally {
+            isSubscribing = false;
+        }
+    }
+})();
+
+/**
+ * This function unsubscribes from notifications.
+ * It first removes the token from the server, then deletes the token on the client.
+ * It also updates the local storage settings.
+ * @returns {Promise<Object>} A promise that resolves to an object with a status property (boolean) and an optional errorCode property (string).
+ */
+async function unSubscribeToNotifications() {
+    try {
+        await detectNewToken();
+        const token = await tokenHandler();
+        // Remove token from server first
+        await removeTokenFromServer(token);
+        // Then delete token on the client
+        await deleteToken(messaging, token);
+        localStorage.setItem("notificationStatus", false);
+        localStorage.removeItem("token");
+        localStorage.removeItem("person_id");
+        resetNotificationSettings();
+        return { status: true };
     } catch (err) {
-        console.log('Error: ', err);
+        // If an error occurs, return an object with status: false and errorCode: 'errorUnsubscribingToNotifications'
+        return { status: false, errorCode: 'errorUnsubscribingToNotifications' };
     }
 }
+
+/**
+ * This function calls unSubscribeToNotifications and handles all the output.
+ * It displays a loading modal, then calls unSubscribeToNotifications.
+ * If the operation is successful, it displays a success modal and logs a success message.
+ * If the operation fails, it displays an error modal and logs the error message returned by unSubscribeToNotifications.
+ */
+export const callUnSubscribeToNotifications = (() => {
+    let isUnsubscribing = false;
+
+    return async function() {
+        if (isUnsubscribing) {
+            return;
+        }
+
+        isUnsubscribing = true;
+
+        try {
+            queueModal("⏳ Stänger av aviseringar...", "info");
+            const result = await unSubscribeToNotifications();
+            if (result.status) {
+                queueModal("🔕 Aviseringar avslagna!", "success");
+                console.log('Token deleted and removed from server.');
+            } else {
+                let errorMessage;
+                switch (result.errorCode) {
+                    case 'errorUnsubscribingToNotifications':
+                        errorMessage = 'Ett fel uppstod vid avprenumeration på aviseringar.';
+                        break;
+                    default:
+                        errorMessage = 'Ett okänt fel uppstod.';
+                }
+                queueModal("🚫 " + errorMessage, "error");
+                console.log(errorMessage);
+            }
+        } catch (err) {
+            console.log('Error: ', err);
+        } finally {
+            isUnsubscribing = false;
+        }
+    }
+})();
 
 /**
  * Detects if the token has changed and updates it on the server if it has.
@@ -108,94 +193,76 @@ export async function callSubscribeToNotifications(person_id) {
  * @function detectNewToken
  * @throws Will log an error to the console if unable to update the token on the server.
  */
-export function detectNewToken() {
-    return new Promise((resolve, reject) => {
-        if (localStorage.getItem("notificationStatus") === "false") {
-            resolve();
-            return;
+export async function detectNewToken() {
+    if (localStorage.getItem("notificationStatus") === "false") {
+        return;
+    }
+    let storedToken = localStorage.getItem("token");
+    let currentToken = await tokenHandler();
+    console.log("Current token: " + currentToken + "\nStored token: " + storedToken);
+    if (currentToken !== storedToken) {
+        try {
+            await updateTokenOnServer(storedToken, currentToken);
+            localStorage.setItem("token", currentToken);
+            console.log('Token updated on server.');
+        } catch (err) {
+            console.log('Unable to update token on server. ', err);
+            throw err;
         }
-        let storedToken = localStorage.getItem("token");
-        tokenHandler().then((currentToken) => {
-            console.log("Current token: " + currentToken + "\nStored token: " + storedToken);
-            if (currentToken !== storedToken) {
-                updateTokenOnServer(storedToken, currentToken).then(() => {
-                    localStorage.setItem("token", currentToken);
-                    console.log('Token updated on server.');
-                    resolve();
-                }).catch((err) => {
-                    console.log('Unable to update token on server. ', err);
-                    reject(err);
-                });
-            }
-            else {
-                console.log("Same token");
-                resolve();
-            }
-        });
-    });
-}
-
-/**
- * This function unsubscribes from notifications.
- * It first removes the token from the server, then deletes the token on the client.
- * It also updates the local storage settings.
- * @returns {Promise<boolean>} A promise that resolves to a boolean value indicating the success or failure of the operation.
- */
-export async function unSubscribeToNotifications() {
-    try {
-        await detectNewToken();
-        const token = await tokenHandler();
-        // Remove token from server first
-        await removeTokenFromServer(token);
-        // Then delete token on the client
-        await deleteToken(messaging, token);
-        localStorage.setItem("notificationStatus", false);
-        localStorage.removeItem("token");
-        localStorage.removeItem("person_id");
-        setLocalStorageSettings(false);
-        return true;
-    } catch (err) {
-        return false;
+    }
+    else {
+        console.log("Same token");
     }
 }
 
-/**
- * This function calls unSubscribeToNotifications and handles all the output.
- * It displays a loading modal, then calls unSubscribeToNotifications.
- * If the operation is successful, it displays a success modal and logs a success message.
- * If the operation fails, it displays an error modal and logs an error message.
- */
-export async function callUnSubscribeToNotifications() {
-    try {
-        queueModal("⏳ Stänger av aviseringar...", "info");
-        const result = await unSubscribeToNotifications();
-        if (result) {
-            queueModal("🔕 Aviseringar avslagna!", "success");
-            console.log('Token deleted and removed from server.');
-        } else {
-            queueModal("🚫 Ett fel inträffade! Försök igen.", "error");
-            console.log('Error occurred while unsubscribing to notifications.');
-        }
-    } catch (err) {
-        console.log('Error: ', err);
+//Export avalibale notification settings
+export const avalibaleNotificationSettings = {
+    reminderToBook: 'off',
+    roomReminderToday: 'off',
+    roomReminderTomorrow: 'off'
+};
+
+// Get notification settings from local storage
+export async function getNotificationSettings() {
+    //Check if notification settings is set in local storage
+    const settings = localStorage.getItem("notificationSettings");
+    if (settings === null) {
+        // Set local stoage to avalibale notification settings
+        localStorage.setItem("notificationSettings", JSON.stringify(avalibaleNotificationSettings));
+    }
+    return JSON.parse(localStorage.getItem("notificationSettings"));
+}
+
+// Take settings as a paramter and set it in local storage
+export function setNotificationSettings(settings) {
+    localStorage.setItem("notificationSettings", JSON.stringify(settings));
+}
+
+//Initialize notification settings
+function initNotificationSettings() {
+    //Check if notification settings is set in local storage
+    const settings = localStorage.getItem("notificationSettings");
+    if (settings === null) {
+        // Set local stoage to avalibale notification settings
+        localStorage.setItem("notificationSettings", JSON.stringify(avalibaleNotificationSettings));
     }
 }
 
-export function updateSettingsForToken() {
+// Reset notification settings
+function resetNotificationSettings() {
+    localStorage.setItem("notificationSettings", JSON.stringify(avalibaleNotificationSettings));
+}
+
+export function updateSettingsForToken(settings) {
     return new Promise((resolve, reject) => {
         if (localStorage.getItem("notificationStatus") === "false") {
             reject("not-subscribed");
             return;
         }
         tokenHandler().then((currentToken) => {
-            const form = document.getElementById("notificaiton-settings");
-            const formData = new FormData(form);
-            const settings = {};
-            for (const pair of formData.entries()) {
-                settings[pair[0]] = pair[1];
-            }
-            console.log(settings);
             updateSettingsForTokenOnServer(currentToken, settings).then(() => {
+                //set the settings in local storage
+                setNotificationSettings(settings);
                 resolve();
             }).catch((err) => {
                 reject(err);
@@ -204,12 +271,6 @@ export function updateSettingsForToken() {
         );
     }
     );
-}
-
-export function setLocalStorageSettings(bool) {
-    localStorage.setItem("reminder", bool);
-    localStorage.setItem("roomReminder", bool);
-    localStorage.setItem("roomReminderTomorrow", bool);
 }
 
 /**

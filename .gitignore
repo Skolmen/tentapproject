@@ -3,3 +3,4 @@ apikeys/__pycache__
 tentapapi/.env
 tentapweb/.env
 *.pyv
+.vscode/launch.json
