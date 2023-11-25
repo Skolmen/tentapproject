@@ -6,9 +6,13 @@ import { queueModal } from "/static/global/modal.js";
 // Retrieve Firebase Messaging object.
 export const messaging = getMessaging(app);
 
-//Init notificationStatus in local storage
-if (localStorage.getItem("notificationStatus") === null) {
-    localStorage.setItem("notificationStatus", false);
+// Get notifcation status from local storage, if it is not set, set it to false
+export function getNotificationStatus() {
+    const status = localStorage.getItem("notificationStatus");
+    if (status === null) {
+        localStorage.setItem("notificationStatus", false);
+    }
+    return localStorage.getItem("notificationStatus");
 }
 
 /**
@@ -181,6 +185,22 @@ export const callUnSubscribeToNotifications = (() => {
 })();
 
 /**
+ * Get the token from local storage.
+ * @returns {string} The token from local storage.
+ */
+function getTokenFromLocalStorage() {
+    return localStorage.getItem("token");
+}
+
+/**
+ * Set the token in local storage.
+ * @param {string} token The token to set in local storage.
+ */
+function setTokenInLocalStorage(token) {
+    localStorage.setItem("token", token);
+}
+
+/**
  * Detects if the token has changed and updates it on the server if it has.
  * 
  * This function first checks if the notification status is set to false in local storage.
@@ -194,16 +214,16 @@ export const callUnSubscribeToNotifications = (() => {
  * @throws Will log an error to the console if unable to update the token on the server.
  */
 export async function detectNewToken() {
-    if (localStorage.getItem("notificationStatus") === "false") {
+    if (localStorage.getItem("token") === null) {
         return;
     }
-    let storedToken = localStorage.getItem("token");
+    let storedToken = getTokenFromLocalStorage();
     let currentToken = await tokenHandler();
     console.log("Current token: " + currentToken + "\nStored token: " + storedToken);
     if (currentToken !== storedToken) {
         try {
             await updateTokenOnServer(storedToken, currentToken);
-            localStorage.setItem("token", currentToken);
+            setTokenInLocalStorage(currentToken);
             console.log('Token updated on server.');
         } catch (err) {
             console.log('Unable to update token on server. ', err);
@@ -215,8 +235,8 @@ export async function detectNewToken() {
     }
 }
 
-//Export avalibale notification settings
-export const avalibaleNotificationSettings = {
+// Export available notification settings
+export const availableNotificationSettings = {
     reminderToBook: 'off',
     roomReminderToday: 'off',
     roomReminderTomorrow: 'off'
@@ -224,133 +244,71 @@ export const avalibaleNotificationSettings = {
 
 // Get notification settings from local storage
 export async function getNotificationSettings() {
-    //Check if notification settings is set in local storage
-    const settings = localStorage.getItem("notificationSettings");
+    let settings = localStorage.getItem("notificationSettings");
     if (settings === null) {
-        // Set local stoage to avalibale notification settings
-        localStorage.setItem("notificationSettings", JSON.stringify(avalibaleNotificationSettings));
+        settings = availableNotificationSettings;
+        localStorage.setItem("notificationSettings", JSON.stringify(settings));
+        settings = JSON.stringify(settings);
     }
-    return JSON.parse(localStorage.getItem("notificationSettings"));
+    return JSON.parse(settings);
 }
 
-// Take settings as a paramter and set it in local storage
+// Set notification settings in local storage
 export function setNotificationSettings(settings) {
     localStorage.setItem("notificationSettings", JSON.stringify(settings));
 }
 
-//Initialize notification settings
+// Initialize notification settings
 function initNotificationSettings() {
-    //Check if notification settings is set in local storage
-    const settings = localStorage.getItem("notificationSettings");
-    if (settings === null) {
-        // Set local stoage to avalibale notification settings
-        localStorage.setItem("notificationSettings", JSON.stringify(avalibaleNotificationSettings));
-    }
+    getNotificationSettings();
 }
 
 // Reset notification settings
 function resetNotificationSettings() {
-    localStorage.setItem("notificationSettings", JSON.stringify(avalibaleNotificationSettings));
+    setNotificationSettings(availableNotificationSettings);
 }
 
-export function updateSettingsForToken(settings) {
-    return new Promise((resolve, reject) => {
-        if (localStorage.getItem("notificationStatus") === "false") {
-            reject("not-subscribed");
-            return;
-        }
-        tokenHandler().then((currentToken) => {
-            updateSettingsForTokenOnServer(currentToken, settings).then(() => {
-                //set the settings in local storage
-                setNotificationSettings(settings);
-                resolve();
-            }).catch((err) => {
-                reject(err);
-            });
-        }
-        );
+export async function updateSettingsForToken(settings) {
+    if (localStorage.getItem("notificationStatus") === "false") {
+        throw new Error("not-subscribed");
     }
-    );
+    const currentToken = await tokenHandler();
+    await updateSettingsForTokenOnServer(currentToken, settings);
+    setNotificationSettings(settings);
 }
 
-/**
- * Updates the token on the server.
- *
- * @async
- * @function updateTokenOnServer
- * @param {string} old_token - The old token to be replaced.
- * @param {string} new_token - The new token to replace the old one.
- * @throws Will throw an error if the response from the server is not ok.
- */
+export function getPersonId() {
+    return localStorage.getItem("person_id");
+}
+
+async function fetchAPI(endpoint, method, body) {
+    const response = await fetch(endpoint, {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to ${method} ${endpoint}`);
+    }
+
+    return response;
+}
+
 async function updateTokenOnServer(old_token, new_token) {
-    const response = await fetch('/api/updateToken', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ old_token, new_token }),
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to update token on server');
-    }
+    await fetchAPI('/api/updateToken', 'POST', { old_token, new_token });
 }
 
-/**
- * Sends the token and person_id to the server.
- *
- * @async
- * @function sendTokenToServer
- * @param {string} token - The token to be sent.
- * @param {string} person_id - The person_id to be sent.
- * @throws Will throw an error if the response from the server is not ok.
- */
 async function sendTokenToServer(token, person_id) {
-    const response = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, person_id }),
-    });
-
-    if (!response.ok) {
-        throw new Error('Bad status code from server.');
-    }
+    await fetchAPI('/api/subscribe', 'POST', { token, person_id });
 }
 
-/**
- * Removes the token from the server.
- *
- * @async
- * @function removeTokenFromServer
- * @param {string} token - The token to be removed.
- * @throws Will throw an error if the response from the server is not ok.
- */
 async function removeTokenFromServer(token) {
-    const response = await fetch('/api/unsubscribe', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to remove token from server');
-    }
+    await fetchAPI('/api/unsubscribe', 'POST', { token });
 }
 
 async function updateSettingsForTokenOnServer(token, settings) {
-    const response = await fetch('/api/updateNotificationSettings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token, settings }),
-    });
-
-    if (!response.ok) {
-        throw new Error('Failed to update settings for token on server');
-    }
+    await fetchAPI('/api/updateNotificationSettings', 'POST', { token, settings });
 }

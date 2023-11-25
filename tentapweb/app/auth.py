@@ -7,7 +7,7 @@ def basic_auth_required(username, password):
         def decorated(*args, **kwargs):
             auth = request.authorization
             if not auth or not (auth.username == username and auth.password == password):
-                return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+                return Response('Unauthorized <br/> <a href="/">Go back</a>', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
             return f(*args, **kwargs)
         return decorated
     return decorator

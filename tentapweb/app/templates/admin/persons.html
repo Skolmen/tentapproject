@@ -2,17 +2,203 @@
 {% block page_title %}Admin - Personer{% endblock %}
 {% block head %}
   {{ super() }}
-{% endblock %}
+  {% endblock %}
 {% block heading %}
 🔒 Admin
 {% endblock %}
 {% block content %}
     <div class="sub-setting">
         <h2>👥 Personer</h2>
-            <h3>🧑 Hantera person</h3></a><br>
-            ta bort, ändra namn
-            <a><h3>📃 Lista över personer</h3></a>
-            lista alla personer
-        </form>
+            <h3>🧑 Lägg till person</h3><br>
+            <form>
+                <label for="name">Namn</label>
+                <input type="text" name="name" id="name" placeholder="Namn">
+                <br>
+                <br>
+                <button type="submit" id="new-person">Lägg till</button>
+            </form>
+            <h3>📃 Hantera personer</h3>
+            <table id="persons-table">
+                <tr>
+                    <th>ID</th>
+                    <th>Namn</th>
+                    <th>Ta bort</th>
+                    <th>Spara</th>
+                </tr>
+            </table>
     </div>
+{% endblock %}
+{% block endOfBody %}
+<script type="module">
+    import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
+    
+    let persons = [];
+
+    async function makeRequest(url, method, body = null) {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        if (body) {
+            options.body = JSON.stringify(body);
+        }
+        const response = await fetch(url, options);
+        return response;
+    }
+
+    async function removePerson(id) {
+        queueModal("⏳ Tar bort person...", "info");
+
+        let response = await makeRequest(`/api/persons/${id}`, 'DELETE');
+
+        if (response.status == 204) {    
+            console.log("Person removed");
+            const row = document.querySelector(`[data-id="${id}"]`).parentElement;
+            row.remove();
+            queueModal("✅ Person borttagen", "success");
+        } else {
+            console.log(error);
+            console.log("Failed to remove person");
+            queueModal("❌ Kunde inte ta bort person", "error");
+        }
+    }
+
+    async function editPerson(id) {
+        queueModal("⏳ Sparar person...", "info");
+        console.log("Editing person with id " + id);
+        const name = document.querySelector(`[data-id="${id}"][data-field="name"]`).textContent;
+        console.log("New name:", name);
+        const person = persons.find(person => person.person_id === id);
+        console.log("Old name:", person.name);
+
+        if (name === person.name) {
+            console.log("No changes made");
+            queueModal("❌ Inga ändringar gjorda", "error");
+            return;
+        }
+
+        let response = await makeRequest(`/api/persons/${id}`, 'PUT', { name: name });
+
+        if (response.ok) {
+            console.log("Person updated");
+            queueModal("✅ Namnet är ändrat", "success");
+        } else {
+            queueModal("❌ Ett fel inträffade", "error");
+            document.querySelector(`[data-id="${id}"][data-field="name"]`).textContent = person.name;
+            console.log("Failed to update person");
+        }
+    }
+
+    async function newPerson(name) {
+        queueModal("⏳ Lägger till person...", "info");
+        console.log("Adding person with name " + name);
+
+        let response = await makeRequest(`/api/persons`, 'POST', { name: name });
+
+        if (response.ok) {
+            console.log("Person added");
+            queueModal("✅ Person tillagd", "success");
+            populateTable();
+        } else {
+            let responseText = await response.text();
+            let error = JSON.parse(responseText).error;
+            if (error === "nameIsEmpty") {
+                queueModal("❌ Namnet får inte vara tomt", "error");
+            } 
+            else if (error === "nameTooLong") {
+                queueModal("❌ Namnet får inte vara längre än 50 tecken", "error");
+            }
+            else if (error === "containsIllegalChars"){
+                queueModal("❌ Namnet får endast innehålla A-Ö, a-ö", "error");
+            }
+            else {
+                queueModal("❌ Ett fel inträffade", "error");
+            }
+            console.log("Failed to add person");
+        }
+    }
+
+    async function populateTable() {
+        const table = document.getElementById('persons-table');
+    
+        // Clear the table except for the header
+        while (table.rows.length > 1) {
+            table.deleteRow(1);
+        }
+        
+        //Fetch all persons
+        await fetch('/api/persons').then(response => {
+            if (response.ok) {
+                return response.json();
+            } else {
+                console.log("Failed to fetch persons");
+            }
+        }).then(data => {
+            console.log("Persons:", data);
+            persons = data;  // Assign the fetched data to persons
+        }).catch(error => {
+            console.log("Failed to fetch persons");
+        });
+
+        // Populate the table with the dummy data
+        persons.forEach(person => {
+            const row = document.createElement('tr');
+
+            const idCell = document.createElement('td');
+            idCell.textContent = person.person_id;
+            idCell.className = 'editable';
+            idCell.dataset.id = person.person_id;
+            idCell.dataset.field = 'id';
+            idCell.style.fontWeight = 'bold';
+            row.appendChild(idCell);
+
+            const nameCell = document.createElement('td');
+            nameCell.textContent = person.name;
+            nameCell.className = 'editable';
+            nameCell.dataset.id = person.person_id;
+            nameCell.dataset.field = 'name';
+            nameCell.contentEditable = true;
+            row.appendChild(nameCell);
+
+            const removeButton = document.createElement('button');
+            removeButton.textContent = 'Ta bort';
+            removeButton.className = 'remove-button';
+            removeButton.dataset.id = person.person_id;
+            const removeCell = document.createElement('td');
+            removeCell.appendChild(removeButton);
+            row.appendChild(removeCell);
+            //add event listener to remove button
+            removeButton.addEventListener('click', function(e) {
+                removePerson(person.person_id);
+            });
+
+            //add a save button
+            const saveButton = document.createElement('button');
+            saveButton.textContent = 'Spara';
+            saveButton.className = 'save-button';
+            saveButton.dataset.id = person.person_id;
+            const saveCell = document.createElement('td');
+            saveCell.appendChild(saveButton);
+            row.appendChild(saveCell);
+            //add event listener to save button
+            saveButton.addEventListener('click', function(e) {
+                editPerson(person.person_id);
+            });
+
+            table.appendChild(row);
+        });
+    }
+
+    populateTable();
+
+    //Adds a new person
+    document.getElementById("new-person").addEventListener("click", function(e) {
+        e.preventDefault();
+        const name = document.getElementById("name").value;
+        newPerson(name);
+    });
+    
+</script>
 {% endblock %}

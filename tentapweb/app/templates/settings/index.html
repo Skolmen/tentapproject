@@ -2,38 +2,12 @@
 {% block page_title %}Inställningar{% endblock %}
 {% block head %}
     {{ super() }}
-    <!--<script src="//cdn.jsdelivr.net/npm/eruda"></script>
-    <script>eruda.init();</script>-->
+    <script src="//cdn.jsdelivr.net/npm/eruda"></script>
+    <script>eruda.init();</script>
     <script>
         const VAPID_PUBLIC_KEY = "{{config['VAPID_PUBLIC_KEY']}}"
     </script>
-    <!--<script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app.js"></script>-->
-    <!--<script type="module" src="https://www.gstatic.com/firebasejs/10.5.2/firebase-messaging.js"></script>-->
-    <!--<script type="module" src="{{ url_for('static', filename='settings/scripts.js') }}"></script>-->
-    <!--<script type="module" src="{{ url_for('static', filename='settings/init-firebase.js') }}"></script>-->
-    <style>
-        button {
-            width: 80px;
-            height: 40px;
-            font-size: 18px;
-        }
-
-        input[type="radio"] {
-            width: 20px;
-            height: 20px;
-        }
-
-        label {
-            font-size: 18px;
-        }
-
-        select {
-            width: 130px;
-            height: 40px;
-            font-size: 18px;
-        }
-        
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='settings/styles.css') }}">
 {% endblock %}
 {% block heading %}
 ⚙ Inställningar
@@ -62,7 +36,7 @@
                 <br>
                 <br>
 
-                <button type="submit">Spara</button>
+                <button id="submit-button">Spara</button>
             </form>
                 <form id="notificaiton-settings">
                 <h3>🕐 Påminnelse av bokning</h3>
@@ -84,7 +58,7 @@
                 <label for="room-reminder-tomorrow-off">Av</label>
                 <br>
                 <br>
-                <button type="submit">Spara</button>
+                <button id="submit-settings-button">Spara</button>
             </form>
             
         </div>
@@ -92,83 +66,73 @@
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
-    import { callSubscribeToNotifications, callUnSubscribeToNotifications, detectNewToken, updateSettingsForToken, getNotificationSettings} from "{{ url_for('static', filename='settings/init-fcm.js') }}"
+    import { callSubscribeToNotifications, callUnSubscribeToNotifications, detectNewToken, updateSettingsForToken, getNotificationSettings, getNotificationStatus, getPersonId} from "{{ url_for('static', filename='settings/init-fcm.js') }}"
     import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
 
     //Check notification status from local storage update it so if
-    function checkNotificationStatus() {
-        const notificationStatus = localStorage.getItem('notificationStatus');
-        if (notificationStatus === 'true') {
-            document.getElementById('notifications-on').checked = true;
-        } else {
-            document.getElementById('notifications-off').checked = true;
-        }
+    function updateRadioButton(id, condition) {
+        document.getElementById(id).checked = condition;
     }
 
-    checkNotificationStatus();
+    function updateNotificationButton() {
+        const notificationStatus = getNotificationStatus() === 'true';
+        updateRadioButton('notifications-on', notificationStatus);
+        updateRadioButton('notifications-off', !notificationStatus);
+    }
 
-    // Check notification settings from local storage and update the radio buttons
-    function checkNotificationSettings() {
+    function updateNotificationSettings() {
         getNotificationSettings().then((settings) => {
-            if (settings.reminderToBook === 'on') {
-                document.getElementById('reminder-on').checked = true;
-            } else {
-                document.getElementById('reminder-off').checked = true;
-            }
-            if (settings.roomReminderToday === 'on') {
-                document.getElementById('room-reminder-on').checked = true;
-            } else {
-                document.getElementById('room-reminder-off').checked = true;
-            }
-            if (settings.roomReminderTomorrow === 'on') {
-                document.getElementById('room-reminder-tomorrow-on').checked = true;
-            } else {
-                document.getElementById('room-reminder-tomorrow-off').checked = true;
-            }
-        }).catch((error) => {
-            if (error === 'not-subscribed') {
-                queueModal('❌ Du är inte prenumererad på notiser', "error");
-            } else {
-                queueModal('❌ Något gick fel', "error");
-            }
-            resetRadioButtons();
+            console.log(settings);
+            updateRadioButton('reminder-on', settings.reminderToBook === 'on');
+            updateRadioButton('reminder-off', settings.reminderToBook !== 'on');
+            updateRadioButton('room-reminder-on', settings.roomReminderToday === 'on');
+            updateRadioButton('room-reminder-off', settings.roomReminderToday !== 'on');
+            updateRadioButton('room-reminder-tomorrow-on', settings.roomReminderTomorrow === 'on');
+            updateRadioButton('room-reminder-tomorrow-off', settings.roomReminderTomorrow !== 'on');
         })
-    }
-    
-
-    checkNotificationSettings();
-
-    //Using the form subscribe to notifications if notifications-on is true and unsubscribe if notifications-off is true using requestPermission and deleteToken if and sending the person id to the backend
-    const form = document.getElementById('notification-form');
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const notificationStatus = formData.get('notification-status');
-        const person = formData.get('person');
-        if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'false') {
-            callSubscribeToNotifications(person);
-        } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'true') {
-            callUnSubscribeToNotifications().then(() => {
-                checkNotificationSettings();
-            });
-        } else if (notificationStatus === 'on' && person !== null && localStorage.getItem('notificationStatus') === 'true') {
-            queueModal('ℹ Du är redan prenumererad på notiser', "info");
-        } else if (notificationStatus === 'off' && localStorage.getItem('notificationStatus') === 'false') {
-            queueModal('ℹ Du är redan avprenumererad på notiser', "info");
-        } else if (notificationStatus === 'on' && person === null) {
-            queueModal('Du måste välja en person', "error");
-        } 
-    });
-
-    if (localStorage.getItem('person_id')) {
-        document.getElementById('person').value = localStorage.getItem('person_id');
     }
 
     detectNewToken();
+    updateNotificationButton();
+    updateNotificationSettings();
 
-    const notificationForm = document.getElementById('notificaiton-settings');
-    notificationForm.addEventListener('submit', (e) => {
+    if (getPersonId()) {
+        document.getElementById('person').value = getPersonId();
+    }
+
+    document.getElementById('submit-button').addEventListener('click', (e) => {
         e.preventDefault();
+        const form = document.getElementById('notification-form');
+        const formData = new FormData(form);
+        const notificationStatus = formData.get('notification-status');
+        const storedNotificationStatus = getNotificationStatus();
+        const person = formData.get('person');
+
+        switch (true) {
+            case (notificationStatus === 'on' && person !== null && storedNotificationStatus === 'false'):
+                callSubscribeToNotifications(person);
+                break;
+            case (notificationStatus === 'off' && storedNotificationStatus === 'true'):
+                callUnSubscribeToNotifications().then(() => {
+                    updateNotificationSettings();
+                });
+                break;
+            case (notificationStatus === 'on' && person !== null && storedNotificationStatus === 'true'):
+                queueModal('ℹ Du är redan prenumererad på notiser', "info");
+                break;
+            case (notificationStatus === 'off' && storedNotificationStatus === 'false'):
+                queueModal('ℹ Du är redan avprenumererad på notiser', "info");
+                break;
+            case (notificationStatus === 'on' && person === null):
+                queueModal('Du måste välja en person', "error");
+                break;
+        }
+    });
+
+
+    document.getElementById('submit-settings-button').addEventListener('click', function(event) {
+        event.preventDefault();
+        const notificationForm = document.getElementById('notificaiton-settings');
         const formData = new FormData(notificationForm);
         const reminder = formData.get('reminder');
         const roomReminder = formData.get('room-reminder');
@@ -192,11 +156,6 @@
             resetRadioButtons();
         })
     });
-
-    // Reset the radio buttons to the previous state
-    function resetRadioButtons() {
-        checkNotificationSettings();
-    }
 
 </script>
 {% endblock %}

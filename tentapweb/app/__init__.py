@@ -44,5 +44,9 @@ def create_app(config_class=Config):
     def fcm_sw():
         return send_from_directory('static', "firebase-messaging-sw.js")
 
+    #Icons
+    @app.route('/icons/<path:filename>')
+    def serve_icon(filename):
+        return send_from_directory('static/icons', filename)
 
     return app

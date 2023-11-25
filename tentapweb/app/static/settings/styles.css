@@ -1,0 +1,20 @@
+button {
+    width: 100px;
+    height: 40px;
+    font-size: 18px;
+}
+
+input[type="radio"] {
+    width: 20px;
+    height: 20px;
+}
+
+label {
+    font-size: 18px;
+}
+
+select {
+    width: 160px;
+    height: 40px;
+    font-size: 18px;
+}

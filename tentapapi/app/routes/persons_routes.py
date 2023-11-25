@@ -55,6 +55,12 @@ def create_person():
         # Create a new Person object with the provided data
         new_person = Person(name=data['name'])
 
+        is_valid, error_message = new_person.validate()
+        if not is_valid:
+            return error_message, 400
+                
+        new_person.sterlize()
+
         # Add the new person to the database session and commit it
         db.session.add(new_person)
         db.session.commit()
@@ -70,7 +76,7 @@ def create_person():
         return "Internal Server Error", 500  # Internal Server Error
 
 #Updates a person
-@bp.route('/person/<int:person_id>', methods=['PUT', 'PATCH'])
+@bp.route('/person/<int:person_id>', methods=['PUT'])
 @api_key_required
 def update_person(person_id):
     try:

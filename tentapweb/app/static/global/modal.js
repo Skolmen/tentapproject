@@ -1,5 +1,3 @@
-// JavaScript to handle the fade-out animation
-
 var modalIsShown = false;
 var modalQueue = [];
 const modalTypes = {
@@ -16,12 +14,12 @@ window.addEventListener("load", () => {
     });
 });
 
-export function queueModal(text, type) {
+export function queueModal(text, type, showTime = 1500) {
     if (!modalTypes[type]) {
         console.log("Invalid modal type: " + type);
         return;
     }
-    modalQueue.push([text, type]);
+    modalQueue.push([text, type, showTime]);
     if (!modalIsShown) {
         showModalFromQueue();
     }
@@ -37,7 +35,7 @@ function showModalFromQueue() {
     modalContent.innerHTML = modalQueue[0][0];
     setTimeout(() => {
         hideModal();
-    }, 1500);    
+    }, modalQueue[0][2]);    
 }
 
 function hideModal(){
