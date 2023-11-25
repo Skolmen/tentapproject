@@ -13,6 +13,10 @@ The tools I have used for this project are:
 ## TentaP-API
 This API handles information about booked rooms, who should book the rooms for the upcoming days, and other relevant details.
 
+## Apikeys
+
+A small Python application to create API keys for TentaP-API.
+
 ## TentaP-Web
 The website serves as the outward face of the project. From here, you can see which rooms are booked and who should book for the upcoming days. Additionally, you can receive reminders in your browser about when a person should book, which rooms are booked for today, and which rooms are booked for tomorrow. The website also allows you to add and edit bookings.
 
