@@ -4,3 +4,4 @@ tentapapi/.env
 tentapweb/.env
 *.pyv
 .vscode/launch.json
+tentapweb/app/static/firebase-messaging-sw.js
