@@ -1,0 +1,19 @@
+.booking_subheading_wrap {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rotate_button {
+    transform: rotate(180deg);
+}
+
+.hide_menu {
+    display: none;
+}
+
+.menu {
+    width: 100%;
+}

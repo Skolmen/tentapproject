@@ -26,6 +26,11 @@
             <div class="header">
                 <h1>{% block heading %}{% endblock %}</h1>
             </div>
+            {% if subHeading %}
+            <h2>
+                {{ subHeading }}
+            </h2>
+            {% endif %}
             <div class="content">
                 {% block content %}
                 {% endblock %}

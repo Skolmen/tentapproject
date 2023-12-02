@@ -10,5 +10,6 @@ class FCMToken(db.Model):
     def to_json(self):
         return {
             'token': self.token,
-            'person_id': self.person_id
+            'person_id': self.person_id,
+            'timestamp': self.timestamp
         }

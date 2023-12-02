@@ -9,7 +9,8 @@ from app.views.admin import bp
 def index():
     url_persons = url_for("admin.persons")
     url_bookings = url_for("admin.bookings")
-    return render_template("admin/index.html", url_persons=url_persons, url_bookings=url_bookings)
+    url_startpage = url_for("admin.startpage")
+    return render_template("admin/index.html", url_persons=url_persons, url_bookings=url_bookings, url_startpage=url_startpage)
 
 @bp.route("/persons")
 @basic_auth_required(USERNAME, PASSWORD)
@@ -19,4 +20,9 @@ def persons():
 @bp.route("/bookings")
 @basic_auth_required(USERNAME, PASSWORD)
 def bookings():
-    return render_template("admin/booking.html")
+    return render_template("admin/bookings.html")
+
+@bp.route("/startpage")
+@basic_auth_required(USERNAME, PASSWORD)
+def startpage():
+    return render_template("admin/startpage.html")
