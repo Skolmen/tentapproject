@@ -1,8 +1,7 @@
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, Blueprint
 import requests
 
-from app.api import bp
-from app.extensions import db
+bp = Blueprint('tokens', __name__)
 
 @bp.route("/subscribe", methods=["POST"])
 def send_token_to_server():
@@ -103,91 +102,4 @@ def update_notification_settings():
     except requests.exceptions.RequestException as e:
         return f'Request error: {str(e)}', 500    
 
-@bp.route("/persons", methods=['GET'])
-def get_persons():
-    try:
-        # Make the GET request with custom headers
-        response = requests.get(current_app.config['TP_API'] + "person", headers={
-            'X-API-Key': current_app.config['TP_API_KEY']
-        })
 
-        # Check if the request was successful (status code 200)
-        if response.status_code == 200:
-            data = response.json()  # Parse the response JSON
-            return data
-        else:
-            return f'Request failed with status code: {response.status_code}', response.status_code
-
-    except requests.exceptions.RequestException as e:
-        return f'Request error: {str(e)}', 500
-    
-#Create a new person
-@bp.route("/persons", methods=['POST'])
-def create_person():
-    try:
-        json_data = request.get_json()
-        name = json_data['name']
-        
-        response = requests.post(current_app.config['TP_API'] + "person", json={
-            'name': name,
-        }, headers={
-            'X-API-Key': current_app.config['TP_API_KEY']
-        })
-        
-        
-        
-        if response.status_code == 201:
-            return jsonify({
-                "status": "created",
-            }), 201
-        else:
-            print(response.text)
-            #return json with error message as error
-            return jsonify({
-                "error": response.text
-            }), response.status_code
-                    
-    except requests.exceptions.RequestException as e:
-        return f'Request error: {str(e)}', 500
-    
-#Update a person
-@bp.route("/persons/<int:person_id>", methods=['PUT'])
-def update_person(person_id):
-    try:
-        json_data = request.get_json()
-        name = json_data['name']
-        
-        response = requests.put(f"{current_app.config['TP_API']}person/{person_id}" , json={
-            'name': name
-        }, headers={
-            'X-API-Key': current_app.config['TP_API_KEY']
-        })
-        
-        if response.status_code == 200:
-            return jsonify({
-                "status": "updated",
-            }), 200
-        else:
-            return f'Request failed with status code: {response.status_code}', response.status_code
-        
-    except requests.exceptions.RequestException as e:
-        return f'Request error: {str(e)}', 500
-    
-#Delete a person
-@bp.route("/persons/<int:person_id>", methods=['DELETE'])
-def delete_person(person_id):
-    try:               
-        response = requests.delete(f"{current_app.config['TP_API']}person/{person_id}",
-            headers={
-                'X-API-Key': current_app.config['TP_API_KEY']
-        })
-        
-        if response.status_code == 204:
-            return jsonify({
-                "status": "deleted",
-            }), 204
-        else:
-            return f'Request failed with status code: {response.status_code}', response.status_code
-        
-    except requests.exceptions.RequestException as e:
-        return f'Request error: {str(e)}', 500

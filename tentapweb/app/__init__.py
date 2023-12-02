@@ -33,7 +33,7 @@ def create_app(config_class=Config):
     #Settings
     from app.api import bp as bp_api
     app.register_blueprint(bp_api, url_prefix="/api")
-    
+        
     #FW config
     @app.route('/config/firebase-config')
     def fw_config():

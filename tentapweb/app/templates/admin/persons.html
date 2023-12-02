@@ -6,27 +6,28 @@
 {% block heading %}
 🔒 Admin
 {% endblock %}
+{% set subHeading = "🏠 Hantera personer" %}
 {% block content %}
-    <div class="sub-setting">
-        <h2>👥 Personer</h2>
-            <h3>🧑 Lägg till person</h3><br>
-            <form>
-                <label for="name">Namn</label>
-                <input type="text" name="name" id="name" placeholder="Namn">
-                <br>
-                <br>
-                <button type="submit" id="new-person">Lägg till</button>
-            </form>
-            <h3>📃 Hantera personer</h3>
-            <table id="persons-table">
-                <tr>
-                    <th>ID</th>
-                    <th>Namn</th>
-                    <th>Ta bort</th>
-                    <th>Spara</th>
-                </tr>
-            </table>
-    </div>
+        <h3>🧑 Lägg till person</h3><br>
+        <form>
+            <label for="name">Namn</label>
+            <input type="text" name="name" id="name" placeholder="Namn">
+            <br>
+            <br>
+            <button type="submit" id="new-person">Lägg till</button>
+        </form>
+        <h3>📃 Hantera personer</h3>
+        <i>Klicka på namnet för att redigera</i>
+        <br>
+        <br>
+        <table id="persons-table">
+            <tr>
+                <th>ID</th>
+                <th>Namn</th>
+                <th>Ta bort</th>
+                <th>Spara</th>
+            </tr>
+        </table>
 {% endblock %}
 {% block endOfBody %}
 <script type="module">
@@ -136,8 +137,8 @@
                 console.log("Failed to fetch persons");
             }
         }).then(data => {
-            console.log("Persons:", data);
-            persons = data;  // Assign the fetched data to persons
+            console.log("Persons:", data.data);
+            persons = data.data;  // Assign the fetched data to persons
         }).catch(error => {
             console.log("Failed to fetch persons");
         });

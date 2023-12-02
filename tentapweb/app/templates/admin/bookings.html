@@ -1,0 +1,350 @@
+{% extends "components/base.html" %}
+{% block page_title %}Bokningar{% endblock %}
+{% block head %}
+    {{ super() }}
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin/bookings/stylesheet.css') }}">
+    <script src="{{ url_for('static', filename='admin/bookings/scripts.js') }}"></script>
+{% endblock %}
+{% block heading %}
+🔒 Admin
+{% endblock %}
+{% set subHeading = "📅 Hantera bokningar" %}
+{% block content %}
+        <div>
+            <span class="booking_subheading_wrap">
+                <h3>🆕 Ny bokning</h3>
+                <div id="new_booking_button" class="rotate_button">🔼</div>
+            </span>
+            <div id="new_booking_menu" class="menu">
+                <form id="new-bookingform">
+                    <!-- Date Selector -->
+                    <label for="date">Datum:</label>
+                    <input type="date" id="date" name="date" required>
+                    <br><br>
+            
+                    <!-- Dropdown for Person FM -->
+                    <label for="person_fm">Person FM:</label>
+                    <select id="person_fm" name="fm_person_id" required>
+                        <!-- Populate with javascript -->
+                    </select>
+                    <br><br>
+            
+                    <!-- Dropdown for Person EM -->
+                    <label for="person_em">Person EM:</label>
+                    <select id="person_em" name="em_person_id" required>
+                        <!-- Populate with javascript -->
+                    </select>
+                    <br><br>
+            
+                    <!-- Input field for Sal FM -->
+                    <label for="sal_fm">Sal FM:</label>
+                    <input type="text" id="sal_fm" name="fm_room">
+                    <br><br>
+            
+                    <!-- Input field for Sal EM -->
+                    <label for="sal_em">Sal EM:</label>
+                    <input type="text" id="sal_em" name="em_room">
+                    <br><br>
+            
+                    <!-- Textbox for Notes_fm -->
+                    <label for="notes_fm">Anteckningar FM:</label>
+                    <textarea id="notes_fm" name="fm_notes" rows="4" cols="40"></textarea>
+                    <br><br>
+    
+                    <!-- Textbox for Notes_em -->
+                    <label for="notes_em">Anteckningar EM:</label>
+                    <textarea id="notes_em" name="em_notes" rows="4" cols="40"></textarea>
+                    <br><br>
+            
+                    <!-- Submit Button -->
+                    <input type="submit" value="Spara bokning">
+                </form>
+            </div>
+        </div>
+        <div>
+            <span class="booking_subheading_wrap">
+                <h3>📝 Redigera bokning</h3>
+                <div id="edit_booking_button">🔼</div>
+            </span>
+            <div id="edit_booking_menu" class="hide_menu menu">
+                <form id="edit-bookingform">
+                    <!-- Date Selector -->
+                    <label for="edit_date">Datum:</label>
+                    <input type="date" id="edit_date" name="date" required>
+                    <br><br>
+
+                    <!-- Dropdown for Person FM -->
+                    <label for="edit_fm_person_id">Person FM:</label>
+                    <select id="edit_fm_person_id" name="fm_person_id" required disabled>
+                        <!-- Populate with javascript -->
+                    </select>
+                    <br><br>
+
+                    <!-- Dropdown for Person EM -->
+                    <label for="edit_em_person_id">Person EM:</label>
+                    <select id="edit_em_person_id" name="em_person_id" required disabled>
+                        <!-- Populate with javascript -->
+                    </select>
+                    <br><br>
+
+                    <!-- Input field for Sal FM -->
+                    <label for="edit_fm_room">Sal FM:</label>
+                    <input type="text" id="edit_fm_room" name="fm_room" disabled>
+                    <br><br>
+
+                    <!-- Input field for Sal EM -->
+                    <label for="edit_em_room">Sal EM:</label>
+                    <input type="text" id="edit_em_room" name="em_room" disabled>
+                    <br><br>
+
+                    <!-- Textbox for Notes_fm -->
+                    <label for="edit_fm_notes">Anteckningar FM:</label>
+                    <textarea id="edit_fm_notes" name="fm_notes" rows="4" cols="40" disabled></textarea>
+                    <br><br>
+
+                    <!-- Textbox for Notes_em -->
+                    <label for="edit_em_notes">Anteckningar EM:</label>
+                    <textarea id="edit_em_notes" name="em_notes" rows="4" cols="40" disabled></textarea>
+                    <br><br>
+
+                    <!-- Submit Button -->
+                    <input id="edit_booking_submit" type="submit" value="Spara bokning" disabled>
+                </form>
+            </div>
+        </div>
+        <div>
+            <span class="booking_subheading_wrap">
+                <h3>🗑 Ta bort bokning</h3>
+                <div id="delete_booking_button">🔼</div>
+            </span>
+            <div id="delete_booking_menu" class="hide_menu menu">
+               <form id="delete_booking_form">
+                    <label for="delete_date">Datum:</label>
+                    <input type="date" id="delete_date" name="date" required>
+                    <br>
+                    <br>
+
+                    <input id="delete_booking_submit" type="submit" value="Ta bort bokning">
+               </form>
+            </div>
+        </div>
+        <div>
+            <h3>📅 Alla bokningar</h3>
+            <table id="booking-table">
+                <tr>
+                    <th>Datum</th>
+                    <th>Person 1</th>
+                    <th>Person 2</th>
+                    <th>Sal FM</th>
+                    <th>Sal EM</th>
+                    <th>Ant. FM</th>
+                    <th>Ant. EM</th>
+                </tr>
+            </table>
+        </div>
+{% endblock %}
+{% block endOfBody %}
+    <script type="module">
+        import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
+
+        function populateDropdowns() {
+            const personFmDropdown = document.getElementById("person_fm");
+            const personEmDropdown = document.getElementById("person_em");
+            const editPersonFmDropdown = document.getElementById("edit_fm_person_id");
+            const editPersonEmDropdown = document.getElementById("edit_em_person_id");
+            const url = "/api/persons";
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                data.data.forEach(person => {
+                    const optionFm = document.createElement("option");
+                    const optionEm = document.createElement("option");
+                    optionFm.text = person.name;
+                    optionFm.value = person.person_id;
+                    optionEm.text = person.name;
+                    optionEm.value = person.person_id;
+                    personFmDropdown.add(optionFm);
+                    personEmDropdown.add(optionEm);
+
+                    const editOptionFm = document.createElement("option");
+                    const editOptionEm = document.createElement("option");
+                    editOptionFm.text = person.name;
+                    editOptionFm.value = person.person_id;
+                    editOptionEm.text = person.name;
+                    editOptionEm.value = person.person_id;
+                    editPersonFmDropdown.add(editOptionFm);
+                    editPersonEmDropdown.add(editOptionEm);
+                });
+            });
+        }
+
+        function saveBooking() {
+            queueModal("⏳ Skapar bokning...", "info");
+            const form = document.getElementById("new-bookingform");
+            const url = "/api/bookings";
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            fetch(url, {
+                method: "POST",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                console.log(response);
+                if (response.status == 201) {
+                    queueModal("✅ Bokning skapad", "success");
+                    populateTable();
+                } else {
+                    queueModal("❌ Kunde inte skapa bokning", "error");
+                }
+            }).catch(error => {
+                queueModal("❌ Kunde inte skapa bokning", "error");
+                console.log(error);
+            })
+        }
+
+        function populateTable() {
+            const table = document.getElementById("booking-table");
+
+            while (table.rows.length > 1) {
+                table.deleteRow(1);
+            }
+
+            const url = "/api/bookings";
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                data.data.forEach(booking => {
+                    const row = table.insertRow();
+                    const dateCell = row.insertCell();
+                    const personFmCell = row.insertCell();
+                    const personEmCell = row.insertCell();
+                    const salFmCell = row.insertCell();
+                    const salEmCell = row.insertCell();
+                    const notesEm = row.insertCell();
+                    const notesFm = row.insertCell();
+
+                    // Format date to YYYY-MM-DD
+                    const date = new Date(booking.date);
+
+                    dateCell.innerHTML = date.toISOString().split("T")[0];
+                    personFmCell.innerHTML = booking.fm_person_id;
+                    personEmCell.innerHTML = booking.em_person_id;
+                    salFmCell.innerHTML = booking.fm_room;
+                    salEmCell.innerHTML = booking.em_room;
+                    notesEm.innerHTML = booking.em_notes;
+                    notesFm.innerHTML = booking.fm_notes;
+                });
+            });
+        }
+
+        function updateBooking() {
+            queueModal("⏳ Uppdaterar bokning...", "info");
+            const form = document.getElementById("edit-bookingform");
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            const url = "/api/bookings/" + data.date;
+            fetch(url, {
+                method: "PUT",
+                body: JSON.stringify(data),
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                console.log(response);
+                if (response.status == 200) {
+                    queueModal("✅ Bokning uppdaterad", "success");
+                    populateTable();
+                } else {
+                    queueModal("❌ Kunde inte uppdatera bokning", "error");
+                }
+            }).catch(error => {
+                queueModal("❌ Kunde inte uppdatera bokning", "error");
+                console.log(error);
+            })
+        }
+
+        function setFormFields(data) {
+            const fields = ['fm_person_id', 'em_person_id', 'fm_room', 'em_room', 'fm_notes', 'em_notes', 'booking_submit'];
+            fields.forEach(field => {
+                const element = document.getElementById(`edit_${field}`);
+                element.disabled = !data;
+                if (field !== 'booking_submit') {
+                    element.value = data ? data[field] : "";
+                }
+            });
+        }
+
+        function deleteBooking() {
+            queueModal("⏳ Tar bort bokning...", "info");
+            const form = document.getElementById("delete_booking_form");
+            const formData = new FormData(form);
+            const data = Object.fromEntries(formData);
+            const url = "/api/bookings/" + data.date;
+            fetch(url, {
+                method: "DELETE",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                if (response.status == 204) {
+                    queueModal("✅ Bokning borttagen", "success");
+                    populateTable();
+                } else {
+                    queueModal("❌ Kunde inte ta bort bokning", "error");
+                }
+            }).catch(error => {
+                queueModal("❌ Kunde inte ta bort bokning", "error");
+                console.log(error);
+            })
+        }
+
+        document.getElementById('delete_booking_submit').addEventListener('click', function(event) {
+            event.preventDefault();
+            deleteBooking();
+        });
+
+        document.getElementById('edit_booking_submit').addEventListener('click', function(event) {
+            event.preventDefault();
+            updateBooking();
+        });
+
+        document.getElementById('edit_date').addEventListener('change', function() {
+            const date = this.value;
+            const url = `/api/bookings/${date}`; // replace with your API endpoint
+
+            queueModal("⏳ Hämtar bokning...", "info");
+
+            fetch(url)
+                .then(response => {
+                    if (response.status == 200) {
+                        queueModal("✅ Bokning hittad", "success");
+                        return response.json();
+                    } else {
+                        throw new Error('HTTP status is not 200');
+                    }
+                })
+                .then(data => {
+                    setFormFields(data.data);
+                })
+                .catch(error => {
+                    queueModal("❌ Kunde inte hitta bokning", "error");
+                    setFormFields(null);
+                });
+        });
+
+        document.getElementById("new-bookingform").addEventListener("submit", function(event) {
+            event.preventDefault();
+            saveBooking();
+        });
+
+        populateTable();
+
+        populateDropdowns();
+        
+    </script>
+{% endblock %}
