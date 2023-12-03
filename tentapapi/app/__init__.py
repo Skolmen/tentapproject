@@ -27,5 +27,9 @@ def create_app(config_class=Config):
     #Token management
     from app.routes.messaging_routes import bp as messaging_bp
     app.register_blueprint(messaging_bp, url_prefix="/messaging")
+    
+    #Startpage
+    from app.routes.startpage_routes import bp as startpage_bp
+    app.register_blueprint(startpage_bp, url_prefix="/startpage")
 
     return app
