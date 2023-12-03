@@ -2,6 +2,7 @@
 {% block page_title %}Admin - Personer{% endblock %}
 {% block head %}
   {{ super() }}
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='admin/startpage/stylesheet.css') }}">
   {% endblock %}
 {% block heading %}
 🔒 Admin
@@ -9,7 +10,61 @@
 {% set subHeading = "🏠 Hantera startsida" %}
 {% block content %}
 
+<div class="editbox">
+  <h3>ℹ Information</h3>
+  <textarea id="information" rows="20" cols="50">{{information}}</textarea>
+  <br>
+  <button id="saveInformation">Spara</button>
+</div>
+
+<div class="editbox">
+  <h3>🔼 Priroiteringar</h3>
+  <textarea id="priorities" rows="20" cols="50">{{priorities}}</textarea>
+  <br>
+  <button id="savePriorities">Spara</button>
+</div>
+
+
 {% endblock %}
 {% block endOfBody %}
+
+<script type="module">
+  import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
+
+  function saveContent(section, contentId, successMessage, errorMessage) {
+    queueModal("⏳ Sparar information...", "info");
+
+    var content = document.getElementById(contentId).value;
+    var data = {
+      "section": section,
+      "content": content
+    };
+    
+    fetch("/api/startpage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(data)
+    }).then(response => {
+      if (response.status == 201) {
+        queueModal(successMessage, "success");
+      } else {
+        throw new Error(errorMessage);
+      }
+    }).catch(error => {
+      queueModal("❌ Kunde inte spara", "error");
+    });
+  }
+
+  document.getElementById("savePriorities").addEventListener("click", function() {
+    saveContent("PRIORITIES", "priorities", "✅ Prioriteringar sparade!", "Prioriteringar kunde ej sparas!");
+  });
+
+  document.getElementById("saveInformation").addEventListener("click", function() {
+    saveContent("INFORMATION", "information", "✅ Information sparad!", "Informationen kunde inte sparas!");
+  });
+
+</script>
 
 {% endblock %}
