@@ -1,13 +1,13 @@
 document.addEventListener("DOMContentLoaded", function(event) {
-    document.getElementById("edit_booking_button").addEventListener("click", function() {
+    document.getElementById("edit_booking").addEventListener("click", function() {
         rotateButton("edit_booking_button");
         expandMenu("edit_booking_menu");
     });
-    document.getElementById("new_booking_button").addEventListener("click", function() {
+    document.getElementById("new_booking").addEventListener("click", function() {
         rotateButton("new_booking_button");
         expandMenu("new_booking_menu");
     });
-    document.getElementById("delete_booking_button").addEventListener("click", function() {
+    document.getElementById("delete_booking").addEventListener("click", function() {
         rotateButton("delete_booking_button");
         expandMenu("delete_booking_menu");
     });

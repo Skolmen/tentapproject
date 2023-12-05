@@ -11,11 +11,11 @@
 {% set subHeading = "📅 Hantera bokningar" %}
 {% block content %}
         <div>
-            <span class="booking_subheading_wrap">
+            <span class="booking_subheading_wrap" id="new_booking">
                 <h3>🆕 Ny bokning</h3>
-                <div id="new_booking_button" class="rotate_button">🔼</div>
+                <div id="new_booking_button">🔼</div>
             </span>
-            <div id="new_booking_menu" class="menu">
+            <div id="new_booking_menu" class="menu hide_menu">
                 <form id="new-bookingform">
                     <!-- Date Selector -->
                     <label for="date">Datum:</label>
@@ -62,7 +62,7 @@
             </div>
         </div>
         <div>
-            <span class="booking_subheading_wrap">
+            <span class="booking_subheading_wrap" id="edit_booking">
                 <h3>📝 Redigera bokning</h3>
                 <div id="edit_booking_button">🔼</div>
             </span>
@@ -113,7 +113,7 @@
             </div>
         </div>
         <div>
-            <span class="booking_subheading_wrap">
+            <span class="booking_subheading_wrap" id="delete_booking">
                 <h3>🗑 Ta bort bokning</h3>
                 <div id="delete_booking_button">🔼</div>
             </span>
