@@ -3,38 +3,47 @@
 {% block head %}
   {{ super() }}
   <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='main/stylesheet.css') }}">
-  <script src="{{ url_for('static', filename='main/script.js') }}"></script>
+  <!--<script src="{{ url_for('static', filename='main/script.js') }}"></script>-->
 {% endblock %}
 {% block content %}
 <div class="main-wrapper">
     <div class="main-top">
-        <h1>📕 Tenta-P HT23.1</h1>
+        <h1>{{ heading }}</h1>
         <div class="sal-box-wrapper notes" id="notes">
             <h3 style="margin-top: 0px;">🚨 Avvikelser 🚨</h4>
             <p style="text-align: left;" id="notes-box">
 
             </p>
+            
         </div>
         <div class="sal-box-wrapper">
             <h3>🏫 Dagens salar</h3>
             <div class="sal-box">
               <span class="sal-label">Sal FM 09:15-13:00:</span>
-              <span id="today-salFmValue">-</span>
+              <span id="today-salFmValue">
+                {{ todaysBooking.fm_room|default('-', true) }}               
+              </span>
             </div>
             <div class="sal-box">
               <span class="sal-label">Sal EM 13:15-17:00:</span>
-              <span id="today-salEmValue">-</span>
+              <span id="today-salEmValue">
+                {{ todaysBooking.em_room|default('-', true) }}
+              </span>
             </div>
         </div>
         <div class="sal-box-wrapper">
             <h3>🔜 Morgondagens salar</h3>
             <div class="sal-box">
               <span class="sal-label">Sal FM 09:15-13:00:</span>
-              <span id="tomorrow-salFmValue">-</span>
+              <span id="tomorrow-salFmValue">
+                {{ tomorrowsBooking.fm_room|default('-', true) }}               
+              </span>
             </div>
             <div class="sal-box">
               <span class="sal-label">Sal EM 13:15-17:00:</span>
-              <span id="tomorrow-salEmValue">-</span>
+              <span id="tomorrow-salEmValue">
+                {{ tomorrowsBooking.em_room|default('-', true) }}               
+              </span>
             </div>
         </div>
     </div>    
@@ -42,8 +51,14 @@
         <!--<img src="{{ url_for('static', filename='images/7f5gy1.gif') }}"/>-->
         <div class="who-books-box">
             <h3>📆 Idag bokar:</h3>
-            <div id="bookingNames"></div>
-            <p>för den <span id="bookingDate"></span></p>
+            <div id="bookingNames">
+                {{ overMorrowsBooking.fm_person_name | default('-', true) }}, FM <br>
+                och <br>
+                {{ overMorrowsBooking.em_person_name | default('-', true) }}, EM
+            </div>
+            <p>för den <span id="bookingDate">
+                {{ overMorrowsBooking.date | default('-', true) }}
+            </span></p>
           </div>
         <div class="main-mid-infobox">
             <h3>ℹ️ Information</h3>
@@ -56,21 +71,19 @@
         <div class="main-mid-list">
             <h3>📅 Bokningsschema</h3>
             <div class="main-mid-changebox">
-                <!-- Dropdown for selecting the date -->
                 <select id="dateDropdown">
-                <!-- Options will be populated dynamically -->
+                  {% for booking in bookings %}
+                    <option value="{{ booking.date }}">{{ booking.date }}</option>
+                  {% endfor %}
                 </select>
 
-                <!-- Dropdown for selecting FM or EM -->
                 <select id="typeDropdown">
                 <option value="FM">FM</option>
                 <option value="EM">EM</option>
                 </select>
 
-                <!-- Input field for entering the value -->
-                <input type="text" id="valueInput" placeholder="Salsnamn">
+                <input type="text" id="roomName" placeholder="Salsnamn">
 
-                <!-- Button to save the updated value -->
                 <button id="saveButton">Spara</button>
             </div>
             <table id="id-main-mid-list-table">
@@ -82,9 +95,66 @@
                     <th>Sal: Fm</th>
                     <th>Sal: Em</th>
                 </tr>
-                <!-- Här ska data läggas in med javascript -->
+                {% for booking in bookings %}
+                <tr>
+                    <td>{{ booking.date }}</td>
+                    <td>{{ booking.day }}</td>
+                    <td>{{ booking.fm_person_name }}</td>
+                    <td>{{ booking.em_person_name }}</td>
+                    <td id="{{ booking.date + '|FM' }}">{{ booking.fm_room }}</td>
+                    <td id="{{ booking.date + '|EM' }}">{{ booking.em_room }}</td>
+                </tr>
+                {% endfor %}
             </table>
         </div>
     </div>
 </div>
+{% endblock %}
+{% block endOfBody %}
+  <script type="module">
+    import { queueModal } from "{{ url_for('static', filename='global/modal.js') }}"
+
+    function updateRoom() {
+      queueModal("⏳ Lägger till sal...", "info");
+
+      const date = document.getElementById("dateDropdown").value;
+      const type = document.getElementById("typeDropdown").value;
+      const room = document.getElementById("roomName").value;
+
+      let json = {};
+      if (type === "FM") {
+        json = {
+          fm_room: room
+        }
+      } else if (type === "EM") {
+        json = {
+          em_room: room
+        }
+      }
+
+      //send a patch to /api/bookings/{date}
+      fetch(`/api/bookings/${date}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(json)
+      }).then(response => {
+        if (response.ok) {
+          queueModal("✅ Sal tillagd!", "success");
+          // insert the cell in to the table
+          const cell = document.getElementById(date + "|" + type);
+          cell.innerHTML = room;
+        }
+      }).catch(error => {
+        console.log(error);
+        queueModal("❌ Något gick fel, försök igen.", "error");
+      })
+
+    }
+
+    document.getElementById("saveButton").addEventListener("click", updateRoom);
+      
+  
+  </script>
 {% endblock %}

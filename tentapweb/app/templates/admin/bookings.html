@@ -212,7 +212,7 @@
                 table.deleteRow(1);
             }
 
-            const url = "/api/bookings";
+            const url = "/api/bookings?with_names=true";
             fetch(url)
             .then(response => response.json())
             .then(data => {
@@ -230,8 +230,8 @@
                     const date = new Date(booking.date);
 
                     dateCell.innerHTML = date.toISOString().split("T")[0];
-                    personFmCell.innerHTML = booking.fm_person_id;
-                    personEmCell.innerHTML = booking.em_person_id;
+                    personFmCell.innerHTML = booking.fm_person_name;
+                    personEmCell.innerHTML = booking.em_person_name;
                     salFmCell.innerHTML = booking.fm_room;
                     salEmCell.innerHTML = booking.em_room;
                     notesEm.innerHTML = booking.em_notes;

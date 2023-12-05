@@ -1,9 +1,10 @@
 from flask import render_template, url_for, current_app
 from app.auth import basic_auth_required
 from config import USERNAME, PASSWORD
-import requests
 
 from app.views.admin import bp
+
+from app.utils.helper_functions import fetchStartPageContent
 
 @bp.route("/")
 @basic_auth_required(USERNAME, PASSWORD)
@@ -23,24 +24,11 @@ def persons():
 def bookings():
     return render_template("admin/bookings.html")
 
-def fetch_content(section):
-    API_LINK = current_app.config['TP_API'] + "startpage"
-    API_KEY = current_app.config['TP_API_KEY']
-
-    response = requests.get(API_LINK + "/" + section, headers={
-        'X-API-Key': API_KEY
-    })
-
-    if response.status_code == 200:
-        data = response.json()  # Parse the response JSON
-        return data["content"]
-
-    return ""
-
 @bp.route("/startpage")
 @basic_auth_required(USERNAME, PASSWORD)
 def startpage():
-    information = fetch_content("INFORMATION")
-    priorities = fetch_content("PRIORITIES")
+    information = fetchStartPageContent("INFORMATION")
+    priorities = fetchStartPageContent("PRIORITIES")
+    heading = fetchStartPageContent("HEADING")
 
-    return render_template("admin/startpage.html", information=information, priorities=priorities)
+    return render_template("admin/startpage.html", information=information, priorities=priorities, heading=heading)

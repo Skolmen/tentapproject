@@ -11,6 +11,13 @@
 {% block content %}
 
 <div class="editbox">
+  <h3>📣 Rubrik</h3>
+  <textarea id="heading" rows="2" cols="50">{{heading}}</textarea>
+  <br>
+  <button id="saveHeading">Spara</button>
+</div>
+
+<div class="editbox">
   <h3>ℹ Information</h3>
   <textarea id="information" rows="20" cols="50">{{information}}</textarea>
   <br>
@@ -23,7 +30,6 @@
   <br>
   <button id="savePriorities">Spara</button>
 </div>
-
 
 {% endblock %}
 {% block endOfBody %}
@@ -63,6 +69,10 @@
 
   document.getElementById("saveInformation").addEventListener("click", function() {
     saveContent("INFORMATION", "information", "✅ Information sparad!", "Informationen kunde inte sparas!");
+  });
+
+  document.getElementById("saveHeading").addEventListener("click", function() {
+    saveContent("HEADING", "heading", "✅ Rubrik sparad!", "Rubriken kunde inte sparas!");
   });
 
 </script>
