@@ -9,13 +9,24 @@
 <div class="main-wrapper">
     <div class="main-top">
         <h1>{{ heading }}</h1>
-        <div class="sal-box-wrapper notes" id="notes">
-            <h3 style="margin-top: 0px;">🚨 Avvikelser 🚨</h4>
-            <p style="text-align: left;" id="notes-box">
-
-            </p>
-            
-        </div>
+        {% if todaysBooking.fm_notes or todaysBooking.em_notes %}
+          <div class="sal-box-wrapper notes" id="notes">
+              <h3 style="margin-top: 0px; margin-bottom:2px;">🚨 Anteckningar 🚨</h4>
+                <p style="margin-top:0">för dagens salar</p>
+              {% if todaysBooking.fm_notes %}
+                <p style="text-align: left; margin:0; margin-bottom:10px" class="notes-box">
+                  Förmiddag: <br>
+                  {{ todaysBooking.fm_notes }}
+                </p>
+              {% endif %}
+              {% if todaysBooking.em_notes %}
+                <p style="text-align: left; margin:0; margin-bottom:10px" class="notes-box">
+                  Eftermiddag: <br>
+                  {{ todaysBooking.em_notes }}
+                </p>
+              {% endif %}
+          </div>
+        {% endif %}
         <div class="sal-box-wrapper">
             <h3>🏫 Dagens salar</h3>
             <div class="sal-box">

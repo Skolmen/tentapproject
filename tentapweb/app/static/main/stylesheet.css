@@ -9,10 +9,13 @@
 /* Apply the animation to the notes element */
 .sal-box-wrapper.notes {
     animation: flashingBackground 1s infinite; /* Adjust the duration as needed */
-    display: none;
-    padding: 5px 5px 0 5px;
+    padding: 5px 10px 0 10px;
     color: white;
-  }
+}
+
+.notes-box {
+    width: 100%;
+}
 
 .main-wrapper {
     display: flex;
