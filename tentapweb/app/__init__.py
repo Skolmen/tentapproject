@@ -1,4 +1,4 @@
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, render_template 
 
 from config import Config
 from app.extensions import db
@@ -48,5 +48,10 @@ def create_app(config_class=Config):
     @app.route('/icons/<path:filename>')
     def serve_icon(filename):
         return send_from_directory('static/icons', filename)
+    
+    #404 error handler
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template('404.html'), 404
 
     return app

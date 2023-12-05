@@ -12,9 +12,9 @@ from app.extensions import db
 class StartPageSections(db.Model):
     __tablename__ = 'startpage_sections'
 
-    version_id = Column(Integer, primary_key=True, autoincrement=True)
+    version_id = Column(Integer, autoincrement=True)
     version_date = Column(db.DateTime, server_default=('CURRENT_TIMESTAMP'))
-    section = Column(Enum('INFORMATION', 'PRIORITIES', name='section_types'), primary_key=True)
+    section = Column(Enum('INFORMATION', 'PRIORITIES', 'HEADING', name='section_types'))
     content = Column(Text)
 
     __table_args__ = (
